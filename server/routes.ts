@@ -63,11 +63,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Be specific, practical, and tailored to the current ${rating} rating level.`;
       
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-      const suggestions = result.text || "Unable to generate suggestions";
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const result = await model.generateContent(prompt);
+      const suggestions = result.response.text() || "Unable to generate suggestions";
       
       res.json({ 
         entry, 
@@ -232,27 +230,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { imageData } = req.body;
       
-      // Use Gemini Vision to classify waste
-      const prompt = "Analyze this waste item image. Identify the category (e.g., Plastic Bottle, Paper, Glass, Metal Can, Organic Waste, Electronic Waste), determine if it's recyclable (yes/no), and provide a specific recycling or upcycling suggestion. Format: Category: [name], Recyclable: [yes/no], Confidence: [0-100]%, Suggestion: [detailed suggestion]";
-      
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType: imageData.split(';')[0].split(':')[1],
-                  data: imageData.split(',')[1]
-                }
-              }
-            ]
+      // Use Gemini Vision to classify waste  
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const result = await model.generateContent([
+        "Analyze this waste item image. Identify the category (e.g., Plastic Bottle, Paper, Glass, Metal Can, Organic Waste, Electronic Waste), determine if it's recyclable (yes/no), and provide a specific recycling or upcycling suggestion. Format: Category: [name], Recyclable: [yes/no], Confidence: [0-100]%, Suggestion: [detailed suggestion]",
+        {
+          inlineData: {
+            mimeType: imageData.split(';')[0].split(':')[1],
+            data: imageData.split(',')[1]
           }
-        ],
-      });
+        }
+      ]);
 
-      const analysisText = result.text || "";
+      const analysisText = result.response.text() || "";
       
       // Parse the response
       const categoryMatch = analysisText.match(/Category:\s*(.+?)(?:,|$)/i);
@@ -374,11 +364,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Be concise, practical, and weather-aware.`;
       
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-      const recommendation = result.text || "Unable to generate recommendations";
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const result = await model.generateContent(prompt);
+      const recommendation = result.response.text() || "Unable to generate recommendations";
       
       // Extract water amount (simple parsing)
       const waterMatch = recommendation.match(/(\d+(?:\.\d+)?)\s*(?:liters|L)/i);
@@ -457,11 +445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const prompt = `You are an AI sustainability assistant for Mera Pruthvi platform. User asks: "${message}". Provide helpful, actionable advice about environmental sustainability, carbon reduction, waste management, or resource optimization. Be concise (2-3 sentences).`;
       
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-      const response = result.text || "Unable to provide assistance";
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const result = await model.generateContent(prompt);
+      const response = result.response.text() || "Unable to provide assistance";
       
       res.json({ response });
     } catch (error: any) {
