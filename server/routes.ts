@@ -170,7 +170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const suggestions = result.response?.text() || "Unable to generate suggestions";
+      const response = await result.response;
+      const suggestions = response.text() || "Unable to generate suggestions";
       
       res.json({ 
         entry, 
@@ -360,7 +361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       });
 
-      const analysisText = result.response?.text() || "";
+      const response = await result.response;
+      const analysisText = response.text() || "";
       
       // Parse the response
       const categoryMatch = analysisText.match(/Category:\s*(.+?)(?:,|$)/i);
@@ -488,7 +490,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const recommendation = result.response?.text() || "Unable to generate recommendations";
+      const response = await result.response;
+      const recommendation = response.text() || "Unable to generate recommendations";
       
       // Extract water amount (simple parsing)
       const waterMatch = recommendation.match(/(\d+(?:\.\d+)?)\s*(?:liters|L)/i);
@@ -561,7 +564,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const response = result.response?.text() || "Unable to provide assistance";
+      const apiResponse = await result.response;
+      const response = apiResponse.text() || "Unable to provide assistance";
       
       res.json({ response });
     } catch (error: any) {
