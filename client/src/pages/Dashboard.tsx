@@ -76,13 +76,10 @@ export default function Dashboard() {
           <ThemeToggle />
         </div>
       </div>
-      
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-gradient mb-2" data-testid="title-dashboard">
-              Mera Pruthvi Dashboard
-            </h1>
+            <h1 className="text-4xl font-bold text-gradient mb-2" data-testid="title-dashboard">Dashboard</h1>
             <p className="text-muted-foreground">Your sustainability intelligence platform</p>
           </div>
           {user && (
