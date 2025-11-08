@@ -390,33 +390,38 @@ Be specific about the category - identify the actual item type, not just "waste"
       const data = await response.json();
       console.log("Google Weather API response:", JSON.stringify(data, null, 2));
 
-      // Extract weather data from Google Weather API response
-      const temperature = data.temperature?.value || 25; // Default to 25°C if not available
-      const humidity = data.relativeHumidity?.value || 60; // Default to 60% if not available
-      const windSpeed = data.windSpeed?.value || 0; // km/h
-      const precipitation = data.precipitationLastHour?.value || 0; // mm
+      // Extract weather data from Google Weather API response (correct structure)
+      const temperature = data.temperature?.degrees || 25; // Celsius
+      const humidity = data.relativeHumidity || 60; // Percentage
+      const windSpeed = data.wind?.speed?.value || 0; // km/h
       
-      // Map Google Weather conditions to our conditions
-      const weatherCode = data.weatherCode || "CLEAR";
+      // Google Weather API doesn't provide precipitation last hour in current conditions
+      // Use precipitation probability as a proxy
+      const precipitationProbability = data.precipitation?.probability?.percent || 0;
+      const precipitation = precipitationProbability > 50 ? 5 : 0; // Estimate mm based on probability
+      
+      // Map Google Weather condition types to our conditions
+      const weatherType = data.weatherCondition?.type || "CLEAR";
+      const weatherDescription = data.weatherCondition?.description?.text || "";
       let condition = "Clear";
       let icon = "Sun";
       
-      if (weatherCode.includes("CLEAR") || weatherCode.includes("SUNNY")) {
+      if (weatherType === "CLEAR" || weatherType === "SUNNY") {
         condition = "Clear";
         icon = "Sun";
-      } else if (weatherCode.includes("CLOUDY") || weatherCode.includes("OVERCAST")) {
+      } else if (weatherType === "CLOUDY" || weatherType === "PARTLY_CLOUDY" || weatherType === "OVERCAST") {
         condition = "Partly Cloudy";
         icon = "Cloud";
-      } else if (weatherCode.includes("RAIN") || weatherCode.includes("DRIZZLE")) {
+      } else if (weatherType === "RAINY" || weatherType === "RAIN" || weatherType === "DRIZZLE") {
         condition = "Rain";
         icon = "CloudRain";
-      } else if (weatherCode.includes("SNOW")) {
+      } else if (weatherType === "SNOWY" || weatherType === "SNOW") {
         condition = "Snow";
         icon = "CloudRain";
-      } else if (weatherCode.includes("FOG") || weatherCode.includes("MIST")) {
+      } else if (weatherType === "FOGGY" || weatherType === "FOG" || weatherType === "MIST") {
         condition = "Fog";
         icon = "Cloud";
-      } else if (weatherCode.includes("THUNDERSTORM") || weatherCode.includes("STORM")) {
+      } else if (weatherType === "THUNDERSTORM" || weatherType === "STORMY") {
         condition = "Thunderstorm";
         icon = "CloudRain";
       }
@@ -428,7 +433,7 @@ Be specific about the category - identify the actual item type, not just "waste"
         windSpeed,
         condition,
         icon,
-        description: data.weatherDescription || condition
+        description: weatherDescription || condition
       });
     } catch (error: any) {
       console.error("Google Weather API error:", error);
