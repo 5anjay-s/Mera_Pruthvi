@@ -63,7 +63,18 @@ export default function Dashboard() {
     <div className="min-h-screen gradient-background">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <div></div>
-        <ThemeToggle />
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => window.location.href = '/profile'}
+            data-testid="button-profile"
+          >
+            <Award className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
+          <ThemeToggle />
+        </div>
       </div>
       
       <div className="container mx-auto px-4 py-8 space-y-6">

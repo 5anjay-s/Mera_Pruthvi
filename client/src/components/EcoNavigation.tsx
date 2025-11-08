@@ -75,11 +75,10 @@ export default function EcoNavigation() {
         const loader = new Loader({
           apiKey: apiKey,
           version: 'weekly',
-          libraries: ['places', 'routes'],
+          libraries: ['places'],
         });
 
-        await loader.importLibrary('maps');
-        await loader.importLibrary('places');
+        await loader.load();
 
         if (mapRef.current && !googleMapRef.current && window.google) {
           // Default to user's location or fallback to a default location
