@@ -4,11 +4,19 @@ import { Cloud, Trash2, BarChart3, Users, Bot, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useLocation } from "wouter";
 import dashboardImage from '@assets/generated_images/Environmental_monitoring_dashboard_3a9b8185.png';
 import wasteImage from '@assets/generated_images/Modern_recycling_facility_e5597a0d.png';
 import citizensImage from '@assets/generated_images/Citizens_using_environmental_app_bd3b390e.png';
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen">
       <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-white/10">
@@ -21,11 +29,11 @@ export default function Landing() {
               <span className="font-bold text-lg">Mera Pruthvi</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" data-testid="link-features">Features</Button>
-              <Button variant="ghost" size="sm" data-testid="link-solutions">Solutions</Button>
-              <Button variant="ghost" size="sm" data-testid="link-about">About</Button>
+              <Button variant="ghost" size="sm" data-testid="link-features" onClick={() => scrollToSection('features')}>Features</Button>
+              <Button variant="ghost" size="sm" data-testid="link-solutions" onClick={() => scrollToSection('solutions')}>Solutions</Button>
+              <Button variant="ghost" size="sm" data-testid="link-about" onClick={() => scrollToSection('about')}>About</Button>
               <ThemeToggle />
-              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started">
+              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started" onClick={() => setLocation('/dashboard')}>
                 Get Started
               </Button>
             </div>
@@ -71,7 +79,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="py-20" id="solutions">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
             <div>
@@ -181,7 +189,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/30" id="about">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Making Every City and Citizen Count

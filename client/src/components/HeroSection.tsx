@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
+import { useLocation } from "wouter";
 import heroImage from '@assets/generated_images/Sustainable_city_aerial_view_6479dcdc.png';
 
 export default function HeroSection() {
+  const [, setLocation] = useLocation();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div 
@@ -26,7 +29,10 @@ export default function HeroSection() {
             variant="default"
             className="bg-primary hover:bg-primary/90 text-primary-foreground border border-primary-border"
             data-testid="button-request-demo"
-            onClick={() => console.log('Request Demo clicked')}
+            onClick={() => {
+              const featuresSection = document.getElementById('features');
+              featuresSection?.scrollIntoView({ behavior: 'smooth' });
+            }}
           >
             Request Demo
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -36,7 +42,7 @@ export default function HeroSection() {
             variant="outline"
             className="bg-background/20 backdrop-blur-lg border-white/30 text-white hover:bg-background/30"
             data-testid="button-explore-dashboard"
-            onClick={() => console.log('Explore Dashboard clicked')}
+            onClick={() => setLocation('/dashboard')}
           >
             <Play className="mr-2 h-4 w-4" />
             Explore Dashboard
