@@ -355,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required parameters: latitude, longitude" });
       }
 
-      const openWeatherApiKey = "fd2b5f044c916526911cfb6de0a0c1c1";
+      const openWeatherApiKey = process.env.OPENWEATHER_API_KEY || "fd2b5f044c916526911cfb6de0a0c1c1";
       
       const params = new URLSearchParams({
         lat: latitude as string,
