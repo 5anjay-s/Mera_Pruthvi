@@ -9,20 +9,103 @@ import {
   insertIrrigationScheduleSchema
 } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import bcrypt from "bcrypt";
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const SALT_ROUNDS = 10;
+
+// Simple session-based authentication middleware
+function requireAuth(req: any, res: any, next: any) {
+  if (req.session && req.session.userId) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  await setupAuth(app);
-  
-  // Auth route
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Authentication routes (username/password)
+  app.post('/api/auth/signup', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const { username, password, email, firstName, lastName } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Hash password with bcrypt (NEVER store plain text passwords!)
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email,
+        firstName,
+        lastName,
+        ecoPoints: 0,
+        level: 1,
+        carbonFootprint: 0,
+      });
+      
+      // Set session
+      (req.session as any).userId = user.id;
+      res.json({ user: { ...user, password: undefined } }); // Never send password to client
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      if (error.message?.includes('unique')) {
+        res.status(400).json({ message: "Username already exists" });
+      } else {
+        res.status(500).json({ message: "Failed to create account" });
+      }
+    }
+  });
+  
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Compare password with bcrypt hash
+      const isValid = await bcrypt.compare(password, user.password);
+      
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Set session
+      (req.session as any).userId = user.id;
+      res.json({ user: { ...user, password: undefined } }); // Never send password to client
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+  
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+  
+  // Get current user
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      res.json(user);
+      res.json({ ...user, password: undefined }); // Never send password to client
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -30,9 +113,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Resource Entries
-  app.post("/api/resources", isAuthenticated, async (req: any, res) => {
+  app.post("/api/resources", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const data = insertResourceEntrySchema.parse({
         ...req.body,
         userId
@@ -97,9 +180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/resources", isAuthenticated, async (req: any, res) => {
+  app.get("/api/resources", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const entries = await storage.getResourceEntriesByUser(userId);
       res.json(entries);
     } catch (error: any) {
@@ -185,9 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Navigation Routes
-  app.post("/api/navigation", isAuthenticated, async (req: any, res) => {
+  app.post("/api/navigation", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const data = insertNavigationRouteSchema.parse({
         ...req.body,
         userId
@@ -200,9 +283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/navigation", isAuthenticated, async (req: any, res) => {
+  app.get("/api/navigation", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const routes = await storage.getNavigationRoutesByUser(userId);
       res.json(routes);
     } catch (error: any) {
@@ -211,9 +294,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Environmental Issues
-  app.post("/api/issues", isAuthenticated, async (req: any, res) => {
+  app.post("/api/issues", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const data = insertEnvironmentalIssueSchema.parse({
         ...req.body,
         userId
@@ -226,9 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/issues", isAuthenticated, async (req: any, res) => {
+  app.get("/api/issues", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const issues = await storage.getEnvironmentalIssuesByUser(userId);
       res.json(issues);
     } catch (error: any) {
@@ -236,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/issues/all", isAuthenticated, async (req, res) => {
+  app.get("/api/issues/all", requireAuth, async (req, res) => {
     try {
       const issues = await storage.getAllEnvironmentalIssues();
       res.json(issues);
@@ -246,9 +329,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Waste Classification with Gemini Vision
-  app.post("/api/waste/classify", isAuthenticated, async (req: any, res) => {
+  app.post("/api/waste/classify", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const { imageData } = req.body;
       
       // Use Gemini Vision to classify waste  
@@ -299,9 +382,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/waste", isAuthenticated, async (req: any, res) => {
+  app.get("/api/waste", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const classifications = await storage.getWasteClassificationsByUser(userId);
       res.json(classifications);
     } catch (error: any) {
@@ -372,9 +455,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Irrigation Schedules with Weather Integration
-  app.post("/api/irrigation", isAuthenticated, async (req: any, res) => {
+  app.post("/api/irrigation", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const { cropType, location, soilMoisture, weatherData } = req.body;
       
       // Build enhanced prompt with real weather data
@@ -420,9 +503,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/irrigation", isAuthenticated, async (req: any, res) => {
+  app.get("/api/irrigation", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const schedules = await storage.getIrrigationSchedulesByUser(userId);
       res.json(schedules);
     } catch (error: any) {
@@ -431,9 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User stats
-  app.get("/api/user/stats", isAuthenticated, async (req: any, res) => {
+  app.get("/api/user/stats", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -461,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Copilot Chat
-  app.post("/api/chat", isAuthenticated, async (req, res) => {
+  app.post("/api/chat", requireAuth, async (req, res) => {
     try {
       const { message } = req.body;
       
@@ -480,9 +563,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics endpoint
-  app.get("/api/analytics", isAuthenticated, async (req: any, res) => {
+  app.get("/api/analytics", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const resourceEntries = await storage.getResourceEntriesByUser(userId);
       const navigationRoutes = await storage.getNavigationRoutesByUser(userId);
       const wasteClassifications = await storage.getWasteClassificationsByUser(userId);
