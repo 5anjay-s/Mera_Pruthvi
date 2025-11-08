@@ -170,8 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const response = await result.response;
-      const suggestions = response.text() || "Unable to generate suggestions";
+      const suggestions = result.text || "Unable to generate suggestions";
       
       res.json({ 
         entry, 
@@ -361,8 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       });
 
-      const response = await result.response;
-      const analysisText = response.text() || "";
+      const analysisText = result.text || "";
       
       // Parse the response
       const categoryMatch = analysisText.match(/Category:\s*(.+?)(?:,|$)/i);
@@ -490,8 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const response = await result.response;
-      const recommendation = response.text() || "Unable to generate recommendations";
+      const recommendation = result.text || "Unable to generate recommendations";
       
       // Extract water amount (simple parsing)
       const waterMatch = recommendation.match(/(\d+(?:\.\d+)?)\s*(?:liters|L)/i);
@@ -564,8 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: "gemini-2.5-flash",
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       });
-      const apiResponse = await result.response;
-      const response = apiResponse.text() || "Unable to provide assistance";
+      const response = result.text || "Unable to provide assistance";
       
       res.json({ response });
     } catch (error: any) {
@@ -681,6 +677,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update user profile
+  app.patch("/api/user/profile", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { email, firstName, lastName } = req.body;
+
+      // Validate input
+      const { updateUserProfileSchema } = await import("@shared/schema");
+      const validatedData = updateUserProfileSchema.parse({ email, firstName, lastName });
+
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update user in database
+      const updatedUser = await storage.updateUser(userId, validatedData);
+
+      res.json({ user: updatedUser });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   });
 

@@ -1,17 +1,74 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Award, TrendingUp, Leaf, Zap, Trophy, Medal, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { LogOut, Award, TrendingUp, Leaf, Zap, Trophy, Medal, Star, User as UserIcon, Edit } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { updateUserProfileSchema, type UpdateUserProfile, type User } from "@shared/schema";
 
 export default function Profile() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
+  const { data: user, isLoading } = useQuery<User>({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const form = useForm<UpdateUserProfile>({
+    resolver: zodResolver(updateUserProfileSchema),
+    defaultValues: {
+      email: "",
+      firstName: "",
+      lastName: "",
+    },
+  });
+
+  // Update form when user data loads
+  if (user && !form.formState.isDirty) {
+    form.reset({
+      email: user.email || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+    });
+  }
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: UpdateUserProfile) => {
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update profile");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLogout = async () => {
     try {
@@ -32,6 +89,10 @@ export default function Profile() {
     }
   };
 
+  const onSubmit = (data: UpdateUserProfile) => {
+    updateProfileMutation.mutate(data);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -42,7 +103,7 @@ export default function Profile() {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <Card className="max-w-md w-full mx-4">
@@ -55,11 +116,11 @@ export default function Profile() {
                 You need to be logged in to view this page.
               </p>
               <Button 
-                onClick={() => setLocation('/')} 
+                onClick={() => setLocation('/login')} 
                 className="w-full"
                 data-testid="button-back-home"
               >
-                Go to Home
+                Go to Login
               </Button>
             </div>
           </CardContent>
@@ -68,7 +129,7 @@ export default function Profile() {
     );
   }
 
-  const typedUser = user as User;
+  const typedUser = user;
   const displayName = typedUser.firstName && typedUser.lastName
     ? `${typedUser.firstName} ${typedUser.lastName}`
     : typedUser.firstName || typedUser.email || 'User';
@@ -175,6 +236,110 @@ export default function Profile() {
             </Card>
           </div>
         </div>
+
+        <Card className="glass-card mb-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-primary" />
+              <CardTitle>Edit Profile</CardTitle>
+            </div>
+            <CardDescription>Update your personal information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((data) => updateProfileMutation.mutate(data))} className="space-y-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={user?.username || ""}
+                    disabled
+                    className="bg-muted cursor-not-allowed"
+                    data-testid="input-username"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Username cannot be changed</p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="your.email@example.com"
+                          {...field}
+                          data-testid="input-email-edit"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="John"
+                            {...field}
+                            data-testid="input-first-name-edit"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Doe"
+                            {...field}
+                            data-testid="input-last-name-edit"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    className="gradient-nature border-0"
+                    disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                    data-testid="button-save-profile"
+                  >
+                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => form.reset()}
+                    disabled={!form.formState.isDirty}
+                    data-testid="button-cancel-edit"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

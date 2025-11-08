@@ -1,6 +1,7 @@
 import { 
   type User, 
   type UpsertUser,
+  type UpdateUserProfile,
   type ResourceEntry,
   type InsertResourceEntry,
   type NavigationRoute,
@@ -28,6 +29,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updates: UpdateUserProfile): Promise<User | undefined>;
   updateUserPoints(id: string, points: number): Promise<User | undefined>;
   updateUserLevel(id: string, level: number): Promise<User | undefined>;
   
@@ -113,6 +115,19 @@ export class MemStorage implements IStorage {
     if (!user) return undefined;
     
     user.level = level;
+    this.users.set(id, user);
+    return user;
+  }
+
+  async updateUser(id: string, updates: UpdateUserProfile): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    if (updates.email !== undefined) user.email = updates.email;
+    if (updates.firstName !== undefined) user.firstName = updates.firstName;
+    if (updates.lastName !== undefined) user.lastName = updates.lastName;
+    user.updatedAt = new Date();
+    
     this.users.set(id, user);
     return user;
   }
@@ -304,6 +319,21 @@ export class DatabaseStorage implements IStorage {
   async updateUserLevel(id: string, level: number): Promise<User | undefined> {
     const [updatedUser] = await db.update(users)
       .set({ level })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser || undefined;
+  }
+
+  async updateUser(id: string, updates: UpdateUserProfile): Promise<User | undefined> {
+    const updateData: Partial<User> = {};
+    
+    if (updates.email !== undefined) updateData.email = updates.email;
+    if (updates.firstName !== undefined) updateData.firstName = updates.firstName;
+    if (updates.lastName !== undefined) updateData.lastName = updates.lastName;
+    
+    const [updatedUser] = await db.update(users)
+      .set({ ...updateData, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     

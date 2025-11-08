@@ -31,6 +31,14 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+export const updateUserProfileSchema = z.object({
+  email: z.string().email().optional(),
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
+});
+
+export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
+
 // Industry Resource Tracking
 export const resourceEntries = pgTable("resource_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
