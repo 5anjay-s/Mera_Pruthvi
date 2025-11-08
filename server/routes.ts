@@ -9,20 +9,33 @@ import {
   insertIrrigationScheduleSchema
 } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  //todo: remove mock functionality - mock user ID for development
-  const MOCK_USER_ID = "demo-user-123";
+  await setupAuth(app);
+  
+  // Auth route
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
   
   // Resource Entries
-  app.post("/api/resources", async (req, res) => {
+  app.post("/api/resources", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const data = insertResourceEntrySchema.parse({
         ...req.body,
-        userId: MOCK_USER_ID
+        userId
       });
       
       const entry = await storage.createResourceEntry(data);
@@ -63,9 +76,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Be specific, practical, and tailored to the current ${rating} rating level.`;
       
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      const result = await model.generateContent(prompt);
-      const suggestions = result.response.text() || "Unable to generate suggestions";
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      const suggestions = result.text || "Unable to generate suggestions";
       
       res.json({ 
         entry, 
@@ -82,9 +97,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/resources", async (req, res) => {
+  app.get("/api/resources", isAuthenticated, async (req: any, res) => {
     try {
-      const entries = await storage.getResourceEntriesByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const entries = await storage.getResourceEntriesByUser(userId);
       res.json(entries);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -169,11 +185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Navigation Routes
-  app.post("/api/navigation", async (req, res) => {
+  app.post("/api/navigation", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const data = insertNavigationRouteSchema.parse({
         ...req.body,
-        userId: MOCK_USER_ID
+        userId
       });
       
       const route = await storage.createNavigationRoute(data);
@@ -183,9 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/navigation", async (req, res) => {
+  app.get("/api/navigation", isAuthenticated, async (req: any, res) => {
     try {
-      const routes = await storage.getNavigationRoutesByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const routes = await storage.getNavigationRoutesByUser(userId);
       res.json(routes);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -193,11 +211,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Environmental Issues
-  app.post("/api/issues", async (req, res) => {
+  app.post("/api/issues", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const data = insertEnvironmentalIssueSchema.parse({
         ...req.body,
-        userId: MOCK_USER_ID
+        userId
       });
       
       const issue = await storage.createEnvironmentalIssue(data);
@@ -207,16 +226,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/issues", async (req, res) => {
+  app.get("/api/issues", isAuthenticated, async (req: any, res) => {
     try {
-      const issues = await storage.getEnvironmentalIssuesByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const issues = await storage.getEnvironmentalIssuesByUser(userId);
       res.json(issues);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/issues/all", async (req, res) => {
+  app.get("/api/issues/all", isAuthenticated, async (req, res) => {
     try {
       const issues = await storage.getAllEnvironmentalIssues();
       res.json(issues);
@@ -226,23 +246,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Waste Classification with Gemini Vision
-  app.post("/api/waste/classify", async (req, res) => {
+  app.post("/api/waste/classify", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { imageData } = req.body;
       
       // Use Gemini Vision to classify waste  
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      const result = await model.generateContent([
-        "Analyze this waste item image. Identify the category (e.g., Plastic Bottle, Paper, Glass, Metal Can, Organic Waste, Electronic Waste), determine if it's recyclable (yes/no), and provide a specific recycling or upcycling suggestion. Format: Category: [name], Recyclable: [yes/no], Confidence: [0-100]%, Suggestion: [detailed suggestion]",
-        {
-          inlineData: {
-            mimeType: imageData.split(';')[0].split(':')[1],
-            data: imageData.split(',')[1]
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: "Analyze this waste item image. Identify the category (e.g., Plastic Bottle, Paper, Glass, Metal Can, Organic Waste, Electronic Waste), determine if it's recyclable (yes/no), and provide a specific recycling or upcycling suggestion. Format: Category: [name], Recyclable: [yes/no], Confidence: [0-100]%, Suggestion: [detailed suggestion]" },
+              {
+                inlineData: {
+                  mimeType: imageData.split(';')[0].split(':')[1],
+                  data: imageData.split(',')[1]
+                }
+              }
+            ]
           }
-        }
-      ]);
+        ]
+      });
 
-      const analysisText = result.response.text() || "";
+      const analysisText = result.text || "";
       
       // Parse the response
       const categoryMatch = analysisText.match(/Category:\s*(.+?)(?:,|$)/i);
@@ -256,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suggestion = suggestionMatch ? suggestionMatch[1].trim() : "Dispose properly in designated bin.";
 
       const classification = await storage.createWasteClassification({
-        userId: MOCK_USER_ID,
+        userId,
         category,
         recyclable: recyclable ? 1 : 0,
         confidence,
@@ -271,9 +299,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/waste", async (req, res) => {
+  app.get("/api/waste", isAuthenticated, async (req: any, res) => {
     try {
-      const classifications = await storage.getWasteClassificationsByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const classifications = await storage.getWasteClassificationsByUser(userId);
       res.json(classifications);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -343,8 +372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Irrigation Schedules with Weather Integration
-  app.post("/api/irrigation", async (req, res) => {
+  app.post("/api/irrigation", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { cropType, location, soilMoisture, weatherData } = req.body;
       
       // Build enhanced prompt with real weather data
@@ -364,16 +394,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Be concise, practical, and weather-aware.`;
       
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      const result = await model.generateContent(prompt);
-      const recommendation = result.response.text() || "Unable to generate recommendations";
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      const recommendation = result.text || "Unable to generate recommendations";
       
       // Extract water amount (simple parsing)
       const waterMatch = recommendation.match(/(\d+(?:\.\d+)?)\s*(?:liters|L)/i);
       const waterAmount = waterMatch ? parseFloat(waterMatch[1]) : 50.0;
       
       const schedule = await storage.createIrrigationSchedule({
-        userId: MOCK_USER_ID,
+        userId,
         cropType,
         location,
         soilMoisture,
@@ -388,9 +420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/irrigation", async (req, res) => {
+  app.get("/api/irrigation", isAuthenticated, async (req: any, res) => {
     try {
-      const schedules = await storage.getIrrigationSchedulesByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const schedules = await storage.getIrrigationSchedulesByUser(userId);
       res.json(schedules);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -398,34 +431,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User stats
-  app.get("/api/user/stats", async (req, res) => {
+  app.get("/api/user/stats", isAuthenticated, async (req: any, res) => {
     try {
-      //todo: remove mock functionality - Replace with actual user from session
-      let user = await storage.getUserByUsername("demo");
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
       
       if (!user) {
-        user = await storage.createUser({
-          username: "demo",
-          password: "demo123"
-        });
+        return res.status(404).json({ message: "User not found" });
       }
       
-      const resourceEntries = await storage.getResourceEntriesByUser(MOCK_USER_ID);
-      const navigationRoutes = await storage.getNavigationRoutesByUser(MOCK_USER_ID);
-      const issues = await storage.getEnvironmentalIssuesByUser(MOCK_USER_ID);
+      const resourceEntries = await storage.getResourceEntriesByUser(userId);
+      const navigationRoutes = await storage.getNavigationRoutesByUser(userId);
+      const issues = await storage.getEnvironmentalIssuesByUser(userId);
       
       const totalCarbonSaved = navigationRoutes.reduce((sum, route) => sum + (10 - route.carbonEmission), 0);
       
-      // Calculate total eco-points from all activities
-      const resourceCredits = resourceEntries.reduce((sum, entry) => sum + (entry.credits || 0), 0);
-      const navigationCredits = navigationRoutes.reduce((sum, route) => sum + (route.credits || 0), 0);
-      const totalEcoPoints = resourceCredits + navigationCredits;
-      
       res.json({
-        user: {
-          ...user,
-          ecoPoints: totalEcoPoints
-        },
+        user,
         stats: {
           totalResources: resourceEntries.length,
           totalRoutes: navigationRoutes.length,
@@ -439,15 +461,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Copilot Chat
-  app.post("/api/chat", async (req, res) => {
+  app.post("/api/chat", isAuthenticated, async (req, res) => {
     try {
       const { message } = req.body;
       
       const prompt = `You are an AI sustainability assistant for Mera Pruthvi platform. User asks: "${message}". Provide helpful, actionable advice about environmental sustainability, carbon reduction, waste management, or resource optimization. Be concise (2-3 sentences).`;
       
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      const result = await model.generateContent(prompt);
-      const response = result.response.text() || "Unable to provide assistance";
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      const response = result.text || "Unable to provide assistance";
       
       res.json({ response });
     } catch (error: any) {
@@ -456,12 +480,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics endpoint
-  app.get("/api/analytics", async (req, res) => {
+  app.get("/api/analytics", isAuthenticated, async (req: any, res) => {
     try {
-      const resourceEntries = await storage.getResourceEntriesByUser(MOCK_USER_ID);
-      const navigationRoutes = await storage.getNavigationRoutesByUser(MOCK_USER_ID);
-      const wasteClassifications = await storage.getWasteClassificationsByUser(MOCK_USER_ID);
-      const irrigationSchedules = await storage.getIrrigationSchedulesByUser(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const resourceEntries = await storage.getResourceEntriesByUser(userId);
+      const navigationRoutes = await storage.getNavigationRoutesByUser(userId);
+      const wasteClassifications = await storage.getWasteClassificationsByUser(userId);
+      const irrigationSchedules = await storage.getIrrigationSchedulesByUser(userId);
 
       // Calculate date range for last 30 days
       const today = new Date();

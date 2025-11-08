@@ -7,13 +7,24 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import GreenPulse from "@/pages/GreenPulse";
+import Profile from "@/pages/Profile";
+import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/greenpulse" component={GreenPulse} />
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/greenpulse" component={GreenPulse} />
+          <Route path="/profile" component={Profile} />
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
