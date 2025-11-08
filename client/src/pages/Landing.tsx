@@ -33,7 +33,7 @@ export default function Landing() {
               <Button variant="ghost" size="sm" data-testid="link-solutions" onClick={() => scrollToSection('solutions')}>Solutions</Button>
               <Button variant="ghost" size="sm" data-testid="link-about" onClick={() => scrollToSection('about')}>About</Button>
               <ThemeToggle />
-              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started" onClick={() => setLocation('/dashboard')}>
+              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started" onClick={() => setLocation('/login')}>
                 Get Started
               </Button>
             </div>
