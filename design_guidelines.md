@@ -1,222 +1,150 @@
-# Mera Pruthvi (GaiaMind) Design Guidelines
+# Mera Pruthvi Design Guidelines v2.0
 
-## Design Approach: Hybrid Material Design + Environmental Focus
+## Design Approach: Refined Material + Environmental Glassmorphism
 
-**Rationale**: This data-intensive platform requires Material Design's robust component system for dashboards and data visualization, while incorporating nature-inspired elements to reinforce the sustainability mission.
+**Core Philosophy**: Premium sustainability SaaS with subtle glassmorphic depth, nature-inspired palette, and data-first clarity. Think Stripe's restraint meets Apple's polish with environmental purpose.
 
-**Key References**: 
-- Google Earth Engine for geospatial interfaces
-- Nest (Google) for environmental data displays
-- Linear for clean, data-forward layouts
-- Duolingo for gamification patterns
+**References**: Linear (clean data layouts), Stripe (sophisticated restraint), Apple Weather (glassmorphic cards), Notion (calm productivity)
 
-## Core Design Principles
+---
 
-1. **Data Clarity First**: Environmental metrics must be instantly comprehensible
-2. **Progressive Disclosure**: Complex data revealed hierarchically
-3. **Action-Oriented**: Every insight leads to clear next steps
-4. **Inclusive Design**: Accessible to government officials and citizens alike
+## Color System
+
+**Light Mode Foundation**:
+- Primary Green: Soft sage (#52796F, #84A98C) - CTAs, active states
+- Earth Accents: Terracotta (#CA6F5D), Clay (#A0826D) - warnings, highlights
+- Neutrals: Warm grays (#F8F9FA → #2D3436) for backgrounds/text
+- Success: Muted forest green, Warning: Soft amber, Critical: Dusty red
+
+**Dark Mode** (sophisticated, not harsh):
+- Background: Deep charcoal (#1A1D1F → #0F1113) 
+- Cards: Elevated slate (#252829) with subtle glow
+- Text: Warm white (#E8EAE6) for reduced eye strain
+- Accent greens: Lighter, desaturated versions of light mode
+
+**Glassmorphism Treatment**:
+- Backdrop blur: backdrop-blur-md to backdrop-blur-xl
+- Semi-transparent whites: bg-white/80, bg-white/60
+- Subtle borders: border border-white/20
+- Soft shadows: shadow-xl with reduced opacity
+- Use sparingly: Hero CTAs, floating cards, AI copilot, dashboard overlays
 
 ---
 
 ## Typography
 
-**Font System**: Google Fonts via CDN
+**Fonts**: Inter (primary, 400-700), JetBrains Mono (data metrics)
 
-- **Primary**: Inter (400, 500, 600, 700)
-  - Dashboard headings: 600/700 weight
-  - Body text: 400 weight
-  - Data labels: 500 weight
-  
-- **Accent/Data**: JetBrains Mono (for metrics, numerical data)
-  - Large metrics: 700 weight, tracking-tight
-  - Data tables: 400 weight
-
-**Type Scale**:
-- Hero/Dashboard Title: text-4xl to text-5xl (mobile: text-3xl)
-- Section Headers: text-2xl to text-3xl
-- Card Titles: text-lg to text-xl
-- Body: text-base
-- Captions/Labels: text-sm
-- Micro-data: text-xs
+**Hierarchy**:
+- Dashboard titles: text-3xl font-semibold tracking-tight
+- Section headers: text-xl font-medium
+- Card titles: text-base font-medium
+- Body: text-sm text-neutral-600 dark:text-neutral-400
+- Metrics: text-4xl font-bold (JetBrains Mono, tabular-nums)
 
 ---
 
-## Layout System
+## Layout & Spacing
 
-**Spacing Primitives**: Tailwind units of **2, 4, 8, 12, 16**
-- Component padding: p-4, p-6, p-8
-- Section spacing: py-12, py-16, py-20
-- Card gaps: gap-4, gap-6, gap-8
-- Tight elements: space-y-2
+**Primitives**: Tailwind units **4, 6, 8, 12, 16, 20**
+- Card padding: p-6, p-8
+- Section spacing: py-16, py-20, py-24
+- Component gaps: gap-6, gap-8
+- Tight groupings: space-y-3
 
-**Grid Structure**:
-- Dashboard: 12-column grid (lg:grid-cols-12)
-- Metric cards: 2-4 columns (grid-cols-1 md:grid-cols-2 lg:grid-cols-4)
-- Data tables: Full-width with horizontal scroll
-- Mobile: Single column stack
-
-**Container Strategy**:
-- Full-bleed dashboards: w-full with inner max-w-7xl px-4
-- Citizen app sections: max-w-6xl mx-auto
-- Landing hero: Full viewport height (min-h-screen)
+**Dashboard Grid**: 
+- Sidebar: w-56 (collapsed: w-16) with smooth transitions
+- Main content: 12-column responsive grid
+- Metric cards: grid-cols-1 md:grid-cols-2 lg:grid-cols-4
+- Charts: 8-column spans, tables: 12-column
 
 ---
 
 ## Component Library
 
 ### Navigation
-- **Admin Dashboard**: Fixed sidebar (w-64) with collapsible sections, icon + label navigation
-- **Citizen App**: Bottom tab bar (mobile) with 4-5 primary actions
-- **Top Bar**: Global search, notifications, user profile, context-aware breadcrumbs
+**Admin Sidebar**: Fixed left (w-56), glassmorphic bg-white/90 dark:bg-slate-900/90, icon+label navigation, collapsible sections with smooth collapse, active state with subtle green accent border-l-2
+**AI Copilot**: Compact fixed right sidebar (w-80 max-h-[70vh]), glassmorphic card, minimized state shows icon button, elegant slide-in animation
 
-### Data Display Components
+### Cards & Surfaces
+**Metric Cards**: Elevated white/slate cards, rounded-xl, shadow-lg, hover:shadow-2xl transition, border-t-4 with status color accent
+**Dashboard Widgets**: Card-based containers with clean headers, subtle dividers, integrated actions (filter/export) in top-right
+**Glassmorphic Overlays**: Modal dialogs, floating action menus, notification toasts - all with backdrop-blur-xl
 
-**Metric Cards**: 
-- Elevated cards with shadow-lg
-- Large numerical display (text-4xl, JetBrains Mono)
-- Trend indicators (↑↓ with percentage change)
-- Sparkline charts for historical context
-- Status badges (Good/Warning/Critical)
-
-**Dashboard Widgets**:
-- Map view: Full-bleed interactive map with overlays
-- Chart containers: aspect-video ratio for consistency
-- Real-time indicators: Pulsing dot animations for live data
-- Data tables: Sticky headers, zebra striping, sortable columns
-
-**Environmental Visualizations**:
-- Heat maps: Gradient overlays on geographic regions
-- Air quality indicators: Circular progress rings with AQI values
-- Waste overflow alerts: Pin markers with severity levels
-- Carbon footprint: Donut charts with category breakdowns
+### Data Visualization
+**Charts**: Clean axis labels, muted grid lines, nature-inspired color scales (greens → blues), smooth transitions on data updates
+**Maps**: Full-bleed base with glassmorphic control panels, location markers with pulsing animation for live data
+**Progress Indicators**: Linear bars with gradient fills, circular rings for percentages, milestone markers
 
 ### Forms & Inputs
+**Input Fields**: Soft rounded borders (rounded-lg), focus:ring-2 ring-green-500/50, floating labels, inline validation with helpful micro-copy
+**Buttons**: Primary (green fill, white text), Secondary (green outline), Ghost (hover background), all with backdrop-blur on hero images
+**Dropdowns/Selects**: Clean with search, checkbox groups with proper spacing
 
-**Citizen Reporting**:
-- Large image upload zones (min-h-48) with drag-drop
-- Location picker with map preview
-- Category chips for issue types
-- Rich text description (max 500 chars)
-
-**Data Entry**:
-- Grouped input fields with clear labels
-- Inline validation with helpful error messages
-- Auto-save indicators
-- Submit with loading states
-
-### Gamification Elements
-
-**Eco-Points System**:
-- Progress bars with milestone markers
-- Achievement badges (circular icons, 64x64px)
-- Leaderboard cards with rank, avatar, points
-- Level indicators with animated transitions
-
-### AI Copilot Interface
-
-**Chat Window**:
-- Fixed bottom-right on desktop (w-96, max-h-[600px])
-- Full screen modal on mobile
-- Message bubbles: User (right-aligned), AI (left-aligned)
-- Suggested actions as clickable chips
-- Chart/report embeds directly in conversation
+### Gamification (Refined)
+**Eco-Points**: Compact progress bar with current/next level, achievement badges (48x48 icons), subtle glow on unlock, leaderboard cards with minimal avatars
 
 ---
 
 ## Landing Page Structure
 
-**Hero Section** (min-h-screen):
-- **Large hero image**: Full-bleed satellite imagery of Earth or urban sustainability (green infrastructure, solar panels, clean city)
-- Overlay: Semi-transparent gradient for text legibility
-- Headline: "AI-Powered Intelligence for a Sustainable Planet"
-- Subheading: Platform value proposition (1-2 sentences)
-- Dual CTAs: "Request Demo" (primary), "Explore Dashboard" (secondary) with backdrop-blur-lg backgrounds
-- Live metric ticker: Scrolling stats (CO₂ Reduced, Cities Monitored, Issues Resolved)
+**Hero** (min-h-screen, full-bleed):
+- Large hero image: Drone shot of solar farm or green urban landscape with subtle parallax
+- Gradient overlay: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)
+- Glassmorphic content card centered: backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 p-12 rounded-2xl max-w-4xl
+- Headline: "AI-Powered Sustainability Intelligence" (text-5xl font-bold)
+- Subheading + dual CTAs with blurred backgrounds
+- Live metric ticker: Horizontal scroll showing real-time stats
 
-**Platform Features** (py-20):
-- 4-column grid showcasing core modules
-- Icon (64x64) + Title + Description per card
-- Hover: Subtle lift effect (translate-y-1)
-
-**Use Case Showcase** (py-16):
-- 2-column alternating layout
-- Left: Screenshot/mockup of dashboard in action
-- Right: Use case description + metrics
-- Reverse layout for each row
-
-**Impact Metrics** (py-12):
-- 4-column stat display
-- Large numbers with units
-- Icon representations
-- Animated count-up on scroll
-
-**Citizen Engagement CTA** (py-16):
-- Split section: GreenPulse app preview (left) + download CTA (right)
-- App store badges
-- QR code for quick mobile access
-
-**AI Copilot Demo** (py-20):
-- Interactive chat preview or video demo
-- Sample queries showing AI capabilities
-- "Try the Copilot" CTA
-
-**Social Proof** (py-12):
-- 3-column testimonials from cities/organizations
-- Logo wall of partners/clients
-- Case study cards with measurable outcomes
-
-**Footer** (py-16):
-- Newsletter signup: "Get Sustainability Insights"
-- Quick links: Platform, Resources, API Docs, Contact
-- Social media links
-- Trust indicators: Certifications, compliance badges
+**Platform Features** (py-20): 4-column card grid, icons from Material Icons, subtle hover lift
+**Dashboard Preview** (py-16): Large mockup with glassmorphic overlay showing live data
+**Impact Metrics** (py-16): 4-column stat cards with animated count-up, donut chart visualizations
+**Citizen Engagement** (py-20): 2-column split with GreenPulse app mockup + download CTA
+**AI Copilot Demo** (py-16): Interactive preview or video embed showing query capabilities
+**Testimonials** (py-12): 3-column cards with logo, quote, attribution
+**Footer** (py-16): Newsletter signup, quick links grid, social icons, trust badges
 
 ---
 
 ## Images Strategy
 
 **Required Images**:
-1. **Hero**: High-res satellite/drone imagery of sustainable urban landscape (1920x1080+)
-2. **Dashboard mockups**: Screenshots of AI Climate Dashboard, Waste Management UI
-3. **GreenPulse app**: Mobile app interface showing citizen reporting
-4. **Team/About**: Optional authentic photos of team or partner cities
-5. **Impact visuals**: Before/after environmental improvements
-6. **Icons**: Material Icons via CDN for consistency
+1. **Hero**: Aerial sustainable landscape (solar panels/green infrastructure) - 1920x1080, high quality
+2. **Dashboard mockup**: AI Climate Dashboard screenshot in browser frame
+3. **Mobile app**: GreenPulse interface on device mockup
+4. **Impact visuals**: Before/after environmental improvements
+5. **Icons**: Material Icons CDN for all UI elements
 
-**Image Treatment**:
-- Hero: Full-bleed with subtle parallax scroll
-- Dashboard mockups: Browser/device frames with slight elevation
-- Maps: Use Google Maps/Earth Engine APIs for real data visualization
+**Treatment**: Hero full-bleed with parallax, mockups with elevation shadow-2xl, all images optimized WebP format
 
 ---
 
-## Accessibility & Performance
+## Animations & Interactions
 
-- WCAG 2.1 AA compliance minimum
-- High contrast for data visualizations
-- Keyboard navigation for all dashboards
-- Screen reader labels for metrics and charts
-- Loading skeletons for data-heavy components
-- Lazy load images and charts below fold
-- Progressive enhancement for map interactions
-
----
-
-## Animation Philosophy
-
-**Minimal & Purposeful**:
-- Metric count-up animations on initial load
-- Smooth chart transitions (300ms ease-out)
-- Map pan/zoom with easing
-- Notification slide-ins for alerts
-- **NO**: Constant motion, decorative animations, distracting effects
+**Micro-interactions**:
+- Card hover: Subtle lift (translate-y-[-4px]) + shadow increase
+- Button press: Scale down (scale-95)
+- Data refresh: Skeleton loaders with shimmer effect
+- Chart updates: 400ms ease-out transitions
+- Page transitions: Fade + slide (200ms)
+- NO constant motion or decorative animations
 
 ---
 
-## Responsive Breakpoints
+## Accessibility
 
-- Mobile: < 768px (single column, bottom nav)
-- Tablet: 768px - 1024px (2-column grids)
-- Desktop: 1024px+ (full dashboard layouts, sidebars)
-- Large screens: 1440px+ (max-w-7xl containers)
+- WCAG AA compliance: 4.5:1 contrast minimum
+- Focus rings: 2px green with offset
+- Keyboard navigation: All interactive elements tabbable
+- Screen reader labels: Comprehensive ARIA
+- Reduced motion: respect prefers-reduced-motion
+- Dark mode toggle with smooth transition
+
+---
+
+## Responsive Strategy
+
+- Mobile (<768px): Single column, bottom nav, full-screen modals
+- Tablet (768-1024px): 2-column grids, slide-out sidebar
+- Desktop (1024px+): Full layout with fixed sidebar
+- Container max-width: 1440px (max-w-7xl)
