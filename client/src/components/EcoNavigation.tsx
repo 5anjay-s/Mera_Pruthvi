@@ -3,11 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { MapPin, Navigation, Leaf, Car, Bus, Bike, FootprintsIcon, Users } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
+import { MapPin, Navigation, Leaf, Car, Bus, Bike, FootprintsIcon, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Loader } from '@googlemaps/js-api-loader';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 interface TransportMode {
   id: string;
@@ -16,27 +23,190 @@ interface TransportMode {
   carbonFactor: number;
   credits: number;
   color: string;
+  routeColor: string;
+  googleMode: string;
 }
 
 const transportModes: TransportMode[] = [
-  { id: "walk", name: "Walking", icon: FootprintsIcon, carbonFactor: 0, credits: 20, color: "text-green-600" },
-  { id: "cycle", name: "Cycling", icon: Bike, carbonFactor: 0, credits: 20, color: "text-green-600" },
-  { id: "bus", name: "Public Bus", icon: Bus, carbonFactor: 0.05, credits: 15, color: "text-blue-600" },
-  { id: "metro", name: "Metro", icon: Navigation, carbonFactor: 0.03, credits: 15, color: "text-blue-600" },
-  { id: "carpool", name: "Carpool", icon: Users, carbonFactor: 0.06, credits: 10, color: "text-yellow-600" },
-  { id: "car", name: "Solo Car", icon: Car, carbonFactor: 0.2, credits: 2, color: "text-red-600" },
+  { id: "walk", name: "Walking", icon: FootprintsIcon, carbonFactor: 0, credits: 20, color: "text-green-600", routeColor: "#10b981", googleMode: "WALKING" },
+  { id: "cycle", name: "Cycling", icon: Bike, carbonFactor: 0, credits: 20, color: "text-green-600", routeColor: "#10b981", googleMode: "BICYCLING" },
+  { id: "transit", name: "Transit", icon: Bus, carbonFactor: 0.05, credits: 15, color: "text-blue-600", routeColor: "#3b82f6", googleMode: "TRANSIT" },
+  { id: "carpool", name: "Carpool", icon: Users, carbonFactor: 0.06, credits: 10, color: "text-yellow-600", routeColor: "#f59e0b", googleMode: "DRIVING" },
+  { id: "car", name: "Solo Car", icon: Car, carbonFactor: 0.2, credits: 2, color: "text-red-600", routeColor: "#ef4444", googleMode: "DRIVING" },
 ];
 
 export default function EcoNavigation() {
   const [startLocation, setStartLocation] = useState("");
   const [endLocation, setEndLocation] = useState("");
   const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null);
-  const [distance, setDistance] = useState(10);
+  const [routeData, setRouteData] = useState<any>(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const { toast } = useToast();
 
-  const { data: routes = [] } = useQuery({
+  // Google Maps refs
+  const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<any>(null);
+  const directionsRendererRef = useRef<any>(null);
+  const startAutocompleteRef = useRef<any>(null);
+  const endAutocompleteRef = useRef<any>(null);
+  const startInputRef = useRef<HTMLInputElement>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: routes = [] } = useQuery<any[]>({
     queryKey: ["/api/navigation"],
   });
+
+  // Initialize Google Maps
+  useEffect(() => {
+    const initMap = async () => {
+      try {
+        const loader = new Loader({
+          apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+          version: 'weekly',
+          libraries: ['places', 'routes'],
+        });
+
+        await loader.importLibrary('maps');
+        await loader.importLibrary('places');
+
+        if (mapRef.current && !googleMapRef.current && window.google) {
+          // Default to user's location or fallback to a default location
+          let initialCenter = { lat: 28.6139, lng: 77.2090 }; // Delhi, India default
+
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                initialCenter = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                };
+                googleMapRef.current?.setCenter(initialCenter);
+              },
+              (error) => {
+                console.log("Geolocation error:", error);
+              }
+            );
+          }
+
+          googleMapRef.current = new window.google.maps.Map(mapRef.current, {
+            center: initialCenter,
+            zoom: 13,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          });
+
+          directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
+            map: googleMapRef.current,
+            suppressMarkers: false,
+            polylineOptions: {
+              strokeWeight: 5,
+            },
+          });
+
+          // Initialize Places Autocomplete
+          if (startInputRef.current) {
+            startAutocompleteRef.current = new window.google.maps.places.Autocomplete(startInputRef.current, {
+              fields: ['formatted_address', 'geometry', 'name'],
+            });
+            startAutocompleteRef.current.addListener('place_changed', () => {
+              const place = startAutocompleteRef.current?.getPlace();
+              if (place?.formatted_address) {
+                setStartLocation(place.formatted_address);
+              }
+            });
+          }
+
+          if (endInputRef.current) {
+            endAutocompleteRef.current = new window.google.maps.places.Autocomplete(endInputRef.current, {
+              fields: ['formatted_address', 'geometry', 'name'],
+            });
+            endAutocompleteRef.current.addListener('place_changed', () => {
+              const place = endAutocompleteRef.current?.getPlace();
+              if (place?.formatted_address) {
+                setEndLocation(place.formatted_address);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error loading Google Maps:", error);
+        toast({
+          title: "Maps Error",
+          description: "Failed to load Google Maps. Please check your API key.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    initMap();
+  }, [toast]);
+
+  // Fetch route when mode is selected
+  const fetchRoute = async () => {
+    if (!startLocation || !endLocation || !selectedMode || !window.google) return;
+
+    setIsLoadingRoute(true);
+    setRouteData(null);
+
+    try {
+      const response = await fetch('/api/navigation/directions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: startLocation,
+          destination: endLocation,
+          travelMode: selectedMode.googleMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch route');
+      }
+
+      const data = await response.json();
+      setRouteData(data);
+
+      // Display route on map
+      if (googleMapRef.current && directionsRendererRef.current && window.google) {
+        const directionsService = new window.google.maps.DirectionsService();
+        
+        directionsService.route(
+          {
+            origin: startLocation,
+            destination: endLocation,
+            travelMode: selectedMode.googleMode as any,
+          },
+          (result: any, status: any) => {
+            if (status === 'OK' && result) {
+              directionsRendererRef.current?.setOptions({
+                polylineOptions: {
+                  strokeColor: selectedMode.routeColor,
+                  strokeWeight: 5,
+                  strokeOpacity: 0.8,
+                },
+              });
+              directionsRendererRef.current?.setDirections(result);
+            }
+          }
+        );
+      }
+    } catch (error: any) {
+      toast({
+        title: "Route Error",
+        description: error.message || "Failed to fetch route",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  };
+
+  useEffect(() => {
+    if (startLocation && endLocation && selectedMode) {
+      fetchRoute();
+    }
+  }, [selectedMode]);
 
   const createRoute = useMutation({
     mutationFn: async (data: any) => {
@@ -53,27 +223,45 @@ export default function EcoNavigation() {
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: `+${data.credits} Eco-Credits Earned!`,
-        description: `Great choice! You saved ${(10 - data.carbonEmission).toFixed(2)} kg CO₂`,
+        description: `Great choice! You saved ${Math.max(0, (120 * (routeData?.distance || 0) / 1000 - data.carbonEmission) / 1000).toFixed(2)} kg CO₂`,
       });
+      
+      // Reset form
       setStartLocation("");
       setEndLocation("");
       setSelectedMode(null);
+      setRouteData(null);
+      if (directionsRendererRef.current) {
+        directionsRendererRef.current.setDirections({ routes: [] } as any);
+      }
+      if (startInputRef.current) startInputRef.current.value = "";
+      if (endInputRef.current) endInputRef.current.value = "";
     },
   });
 
-  const handleSubmit = () => {
-    if (!startLocation || !endLocation || !selectedMode) return;
+  const handleSaveJourney = () => {
+    if (!routeData || !selectedMode) return;
 
-    const carbonEmission = distance * selectedMode.carbonFactor;
-    
+    const distanceKm = routeData.distance / 1000;
+    const carbonEmissionKg = routeData.carbonEmission / 1000;
+
     createRoute.mutate({
-      startLocation,
-      endLocation,
+      startLocation: routeData.startAddress || startLocation,
+      endLocation: routeData.endAddress || endLocation,
       transportMode: selectedMode.id,
-      distance,
-      carbonEmission,
+      distance: distanceKm,
+      carbonEmission: carbonEmissionKg,
       credits: selectedMode.credits,
     });
+  };
+
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   return (
@@ -87,17 +275,58 @@ export default function EcoNavigation() {
           <CardDescription>Plan sustainable routes and earn credits for eco-friendly travel</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Interactive Map */}
+          <div className="relative rounded-lg overflow-hidden border border-border">
+            <div ref={mapRef} className="w-full h-[400px]" data-testid="google-map" />
+            
+            {/* Glassmorphism overlay for route info */}
+            {routeData && (
+              <div className="absolute top-4 right-4 p-4 rounded-lg backdrop-blur-lg bg-background/80 border border-border shadow-lg max-w-xs" data-testid="route-info-overlay">
+                <h3 className="font-semibold text-sm mb-3">Route Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Distance:</span>
+                    <span className="font-medium" data-testid="text-route-distance">{(routeData.distance / 1000).toFixed(2)} km</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span className="font-medium" data-testid="text-route-duration">{formatDuration(routeData.duration)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CO₂ Emission:</span>
+                    <span className="font-medium" data-testid="text-route-carbon">{(routeData.carbonEmission / 1000).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-muted-foreground">Credits:</span>
+                    <Badge variant="default" className="bg-primary/10 text-primary border-0" data-testid="badge-route-credits">
+                      +{selectedMode?.credits} pts
+                    </Badge>
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Carbon saved vs. solo driving: 
+                      <span className="font-semibold text-green-600 ml-1" data-testid="text-carbon-saved">
+                        {Math.max(0, (120 * routeData.distance / 1000 - routeData.carbonEmission) / 1000).toFixed(2)} kg CO₂
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Location Inputs with Places Autocomplete */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">Starting Point</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
                 <Input
+                  ref={startInputRef}
                   id="start"
                   placeholder="Enter start location"
                   className="pl-9"
-                  value={startLocation}
-                  onChange={(e) => setStartLocation(e.target.value)}
+                  defaultValue={startLocation}
                   data-testid="input-start-location"
                 />
               </div>
@@ -106,22 +335,23 @@ export default function EcoNavigation() {
             <div className="space-y-2">
               <Label htmlFor="end">Destination</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
                 <Input
+                  ref={endInputRef}
                   id="end"
                   placeholder="Enter destination"
                   className="pl-9"
-                  value={endLocation}
-                  onChange={(e) => setEndLocation(e.target.value)}
+                  defaultValue={endLocation}
                   data-testid="input-end-location"
                 />
               </div>
             </div>
           </div>
 
+          {/* Transportation Mode Selection */}
           <div className="space-y-3">
             <Label>Choose Transportation Mode</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {transportModes.map((mode) => {
                 const Icon = mode.icon;
                 const isSelected = selectedMode?.id === mode.id;
@@ -131,7 +361,8 @@ export default function EcoNavigation() {
                     key={mode.id}
                     type="button"
                     onClick={() => setSelectedMode(mode)}
-                    className={`p-4 rounded-lg border-2 transition-all hover-elevate ${
+                    disabled={!startLocation || !endLocation || isLoadingRoute}
+                    className={`p-4 rounded-lg border-2 transition-all hover-elevate disabled:opacity-50 disabled:cursor-not-allowed ${
                       isSelected 
                         ? 'border-primary bg-primary/5' 
                         : 'border-border bg-card'
@@ -151,39 +382,28 @@ export default function EcoNavigation() {
             </div>
           </div>
 
-          {selectedMode && (
-            <div className="p-4 rounded-lg gradient-overlay border border-primary/20">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">{distance} km</p>
-                  <p className="text-xs text-muted-foreground">Distance</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">
-                    {(distance * selectedMode.carbonFactor).toFixed(2)} kg
-                  </p>
-                  <p className="text-xs text-muted-foreground">CO₂ Emission</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">+{selectedMode.credits}</p>
-                  <p className="text-xs text-muted-foreground">Credits</p>
-                </div>
-              </div>
+          {/* Loading State */}
+          {isLoadingRoute && (
+            <div className="flex items-center justify-center p-4" data-testid="loading-route">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Calculating route...</span>
             </div>
           )}
 
+          {/* Save Journey Button */}
           <Button 
-            onClick={handleSubmit}
+            onClick={handleSaveJourney}
             className="w-full gradient-nature border-0"
-            disabled={!startLocation || !endLocation || !selectedMode || createRoute.isPending}
-            data-testid="button-start-navigation"
+            disabled={!routeData || !selectedMode || createRoute.isPending}
+            data-testid="button-save-journey"
           >
             <Leaf className="mr-2 h-4 w-4" />
-            Start Eco-Friendly Route
+            {createRoute.isPending ? "Saving..." : "Save Journey"}
           </Button>
         </CardContent>
       </Card>
 
+      {/* Recent Journeys */}
       {routes.length > 0 && (
         <Card className="card-gradient">
           <CardHeader>
@@ -199,13 +419,14 @@ export default function EcoNavigation() {
                   <div
                     key={route.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    data-testid={`route-${route.id}`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="h-5 w-5 text-primary" />
                       <div>
                         <p className="font-medium text-sm">{route.startLocation} → {route.endLocation}</p>
                         <p className="text-xs text-muted-foreground">
-                          {route.distance} km • {route.carbonEmission.toFixed(2)} kg CO₂
+                          {route.distance.toFixed(1)} km • {route.carbonEmission.toFixed(2)} kg CO₂
                         </p>
                       </div>
                     </div>

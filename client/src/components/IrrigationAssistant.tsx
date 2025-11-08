@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Droplets, MapPin, Sprout, Loader2, CloudRain } from "lucide-react";
+import { Droplets, MapPin, Sprout, Loader2, CloudRain, Sun, Cloud, Wind, Thermometer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const cropTypes = [
@@ -21,15 +21,50 @@ const soilMoisturelevels = [
   { value: "wet", label: "Wet", color: "text-blue-600" },
 ];
 
+// Default coordinates for common agricultural regions
+const defaultLocations: Record<string, { lat: number; lon: number }> = {
+  default: { lat: 28.6139, lon: 77.2090 }, // Delhi, India
+  delhi: { lat: 28.6139, lon: 77.2090 },
+  mumbai: { lat: 19.0760, lon: 72.8777 },
+  bangalore: { lat: 12.9716, lon: 77.5946 },
+  pune: { lat: 18.5204, lon: 73.8567 },
+  hyderabad: { lat: 17.3850, lon: 78.4867 },
+};
+
 export default function IrrigationAssistant() {
   const [cropType, setCropType] = useState("");
   const [location, setLocation] = useState("");
   const [soilMoisture, setSoilMoisture] = useState("");
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
   const { toast } = useToast();
 
-  const { data: schedules = [] } = useQuery({
+  const { data: schedules = [] } = useQuery<any[]>({
     queryKey: ["/api/irrigation"],
   });
+
+  const fetchWeather = async (locationName: string) => {
+    setIsLoadingWeather(true);
+    try {
+      const locationKey = locationName.toLowerCase().trim();
+      const coords = defaultLocations[locationKey] || defaultLocations.default;
+      
+      const response = await fetch(`/api/weather?latitude=${coords.lat}&longitude=${coords.lon}`);
+      if (!response.ok) throw new Error("Failed to fetch weather");
+      
+      const data = await response.json();
+      setWeatherData(data);
+    } catch (error) {
+      console.error("Weather fetch error:", error);
+      toast({
+        title: "Weather Unavailable",
+        description: "Using default location weather",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingWeather(false);
+    }
+  };
 
   const createSchedule = useMutation({
     mutationFn: async (data: any) => {
@@ -45,23 +80,50 @@ export default function IrrigationAssistant() {
       queryClient.invalidateQueries({ queryKey: ["/api/irrigation"] });
       toast({
         title: "Irrigation Schedule Created",
-        description: "AI-powered watering recommendations generated",
+        description: "AI-powered watering recommendations generated with real weather data",
       });
       setCropType("");
       setLocation("");
       setSoilMoisture("");
+      setWeatherData(null);
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cropType || !location || !soilMoisture) return;
+
+    // Fetch weather data first if not already loaded
+    if (!weatherData && location) {
+      await fetchWeather(location);
+    }
 
     createSchedule.mutate({
       cropType,
       location,
       soilMoisture,
+      weatherData,
     });
+  };
+
+  const handleLocationChange = (value: string) => {
+    setLocation(value);
+    if (value.length > 2) {
+      fetchWeather(value);
+    }
+  };
+
+  const getWeatherIcon = (iconName: string) => {
+    switch (iconName) {
+      case "Sun":
+        return <Sun className="h-8 w-8" />;
+      case "Cloud":
+        return <Cloud className="h-8 w-8" />;
+      case "CloudRain":
+        return <CloudRain className="h-8 w-8" />;
+      default:
+        return <Sun className="h-8 w-8" />;
+    }
   };
 
   return (
@@ -99,15 +161,56 @@ export default function IrrigationAssistant() {
                   <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="location"
-                    placeholder="Enter farm location"
+                    placeholder="Enter city (e.g., Delhi, Mumbai, Pune)"
                     className="pl-9"
                     value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    onChange={(e) => handleLocationChange(e.target.value)}
                     data-testid="input-location"
                   />
                 </div>
               </div>
             </div>
+
+            {weatherData && (
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-background to-background border border-primary/20 backdrop-blur-sm">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Cloud className="h-4 w-4 text-primary" />
+                  Current Weather Conditions
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
+                    <div className="text-primary mb-1">
+                      {getWeatherIcon(weatherData.icon)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Condition</p>
+                    <p className="text-sm font-semibold">{weatherData.condition}</p>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
+                    <Thermometer className="h-8 w-8 text-orange-500 mb-1" />
+                    <p className="text-xs text-muted-foreground">Temperature</p>
+                    <p className="text-sm font-semibold">{weatherData.temperature}°C</p>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
+                    <Droplets className="h-8 w-8 text-blue-500 mb-1" />
+                    <p className="text-xs text-muted-foreground">Humidity</p>
+                    <p className="text-sm font-semibold">{weatherData.humidity}%</p>
+                  </div>
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
+                    <Wind className="h-8 w-8 text-sky-500 mb-1" />
+                    <p className="text-xs text-muted-foreground">Wind Speed</p>
+                    <p className="text-sm font-semibold">{weatherData.windSpeed} km/h</p>
+                  </div>
+                </div>
+                {weatherData.precipitation > 0 && (
+                  <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                      <CloudRain className="h-4 w-4" />
+                      Rain detected: {weatherData.precipitation}mm - Consider skipping irrigation today
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Current Soil Moisture Level</Label>
@@ -134,18 +237,18 @@ export default function IrrigationAssistant() {
             <Button 
               type="submit" 
               className="w-full gradient-nature border-0" 
-              disabled={createSchedule.isPending || !cropType || !location || !soilMoisture}
+              disabled={createSchedule.isPending || isLoadingWeather || !cropType || !location || !soilMoisture}
               data-testid="button-generate-schedule"
             >
-              {createSchedule.isPending ? (
+              {createSchedule.isPending || isLoadingWeather ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Schedule...
+                  {isLoadingWeather ? "Loading Weather..." : "Generating Schedule..."}
                 </>
               ) : (
                 <>
                   <CloudRain className="mr-2 h-4 w-4" />
-                  Generate AI Irrigation Schedule
+                  Generate Weather-Aware Schedule
                 </>
               )}
             </Button>
@@ -162,17 +265,39 @@ export default function IrrigationAssistant() {
             {schedules.slice(0, 3).map((schedule: any) => (
               <div
                 key={schedule.id}
-                className="p-4 rounded-lg bg-muted/50 space-y-3"
+                className="p-4 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 border border-border backdrop-blur-sm space-y-3"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between flex-wrap gap-2">
                   <div>
                     <p className="font-semibold capitalize">{schedule.cropType}</p>
-                    <p className="text-sm text-muted-foreground">{schedule.location}</p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {schedule.location}
+                    </p>
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
                     {schedule.waterAmount} L
                   </Badge>
                 </div>
+                
+                {schedule.weatherForecast && (
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground p-2 rounded bg-background/50">
+                    <span className="flex items-center gap-1">
+                      <Thermometer className="h-3 w-3" />
+                      {schedule.weatherForecast.temp || schedule.weatherForecast.temperature}°C
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Droplets className="h-3 w-3" />
+                      {schedule.weatherForecast.humidity}%
+                    </span>
+                    {schedule.weatherForecast.precipitation > 0 && (
+                      <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <CloudRain className="h-3 w-3" />
+                        {schedule.weatherForecast.precipitation}mm
+                      </span>
+                    )}
+                  </div>
+                )}
                 
                 <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <p className="text-sm whitespace-pre-line">{schedule.recommendation}</p>

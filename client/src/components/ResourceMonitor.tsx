@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Zap, Droplets, Flame, Loader2 } from "lucide-react";
+import { Zap, Droplets, Flame, Loader2, Check, CheckCircle, AlertTriangle, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ResourceEntry {
@@ -16,6 +18,20 @@ interface ResourceEntry {
   unit: string;
   credits: number;
   date: string;
+}
+
+interface Benchmark {
+  good: number;
+  normal: number;
+  bad: number;
+  unit: string;
+}
+
+interface Rating {
+  level: "Good" | "Normal" | "Bad" | "Worst";
+  color: string;
+  benchmark: Benchmark;
+  percentage: number;
 }
 
 const resourceTypes = [
@@ -28,6 +44,8 @@ export default function ResourceMonitor() {
   const [resourceType, setResourceType] = useState("");
   const [amount, setAmount] = useState("");
   const [suggestions, setSuggestions] = useState("");
+  const [rating, setRating] = useState<Rating | null>(null);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: entries = [] } = useQuery<ResourceEntry[]>({
@@ -47,11 +65,20 @@ export default function ResourceMonitor() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
-      setSuggestions(data.suggestions);
+      
+      setSuggestions(data.suggestions || "");
+      setRating(data.rating || null);
+      setIsSuggestionsOpen(true);
       setAmount("");
+      
+      const bonusPoints = data.rating?.level === "Good" ? 10 : 0;
+      const totalCredits = data.entry.credits + bonusPoints;
+      
       toast({
-        title: `+${data.entry.credits} Credits Earned!`,
-        description: "Great job tracking your resources",
+        title: `+${totalCredits} Eco-Points Earned!`,
+        description: data.rating?.level === "Good" 
+          ? "Excellent! +10 bonus points for achieving Good rating!" 
+          : "Great job tracking your resources",
       });
     },
   });
@@ -69,6 +96,35 @@ export default function ResourceMonitor() {
   };
 
   const selectedTypeConfig = resourceTypes.find(t => t.value === resourceType);
+
+  const getRatingBadgeColor = (level: string) => {
+    switch (level) {
+      case "Good":
+        return "bg-green-500 text-white border-green-600";
+      case "Normal":
+        return "bg-yellow-500 text-white border-yellow-600";
+      case "Bad":
+        return "bg-orange-500 text-white border-orange-600";
+      case "Worst":
+        return "bg-red-500 text-white border-red-600";
+      default:
+        return "bg-gray-500 text-white border-gray-600";
+    }
+  };
+
+  const getRatingIcon = (level: string) => {
+    switch (level) {
+      case "Good":
+        return <CheckCircle className="h-4 w-4" />;
+      case "Normal":
+        return <Check className="h-4 w-4" />;
+      case "Bad":
+      case "Worst":
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -132,13 +188,76 @@ export default function ResourceMonitor() {
             </Button>
           </form>
 
-          {suggestions && (
-            <div className="mt-6 p-4 rounded-lg gradient-overlay border border-primary/20" data-testid="ai-suggestions">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                AI Optimization Suggestions
-              </h4>
-              <p className="text-sm whitespace-pre-line">{suggestions}</p>
+          {rating && (
+            <div className="mt-6 space-y-4">
+              <Card className="card-gradient backdrop-blur-sm bg-card/50 border border-primary/10" data-testid="rating-card">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Usage Rating:</span>
+                        <Badge 
+                          className={`${getRatingBadgeColor(rating.level)} flex items-center gap-1 no-default-hover-elevate`}
+                          data-testid="badge-rating"
+                        >
+                          {getRatingIcon(rating.level)}
+                          {rating.level}
+                        </Badge>
+                      </div>
+                      {rating.level === "Good" && (
+                        <Badge 
+                          className="bg-primary/20 text-primary border-primary/30"
+                          data-testid="badge-bonus"
+                        >
+                          +10 Bonus Eco-Points!
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="p-3 rounded-md bg-muted/50">
+                      <p className="text-sm text-muted-foreground" data-testid="text-benchmark">
+                        <span className="font-medium text-foreground">Your usage:</span> {rating.percentage}% of normal benchmark
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Industry benchmarks: Good ≤ {rating.benchmark.good} {rating.benchmark.unit}, Normal ≤ {rating.benchmark.normal} {rating.benchmark.unit}, Bad ≤ {rating.benchmark.bad} {rating.benchmark.unit}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {suggestions && (
+                <Collapsible open={isSuggestionsOpen} onOpenChange={setIsSuggestionsOpen}>
+                  <Card className="card-gradient backdrop-blur-sm bg-card/50 border border-primary/10">
+                    <CardContent className="pt-6">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full flex items-center justify-between p-0 h-auto hover-elevate"
+                          data-testid="button-toggle-suggestions"
+                        >
+                          <h4 className="font-semibold flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-primary" />
+                            AI Enhancement Suggestions
+                          </h4>
+                          <ChevronDown 
+                            className={`h-4 w-4 transition-transform duration-200 ${
+                              isSuggestionsOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-4 space-y-2 transition-all duration-300 ease-in-out">
+                        <div className="p-4 rounded-md bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                          <p className="text-sm whitespace-pre-line leading-relaxed" data-testid="text-suggestions">
+                            {suggestions}
+                          </p>
+                        </div>
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
+              )}
             </div>
           )}
         </CardContent>

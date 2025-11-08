@@ -10,9 +10,17 @@ import {
   type WasteClassification,
   type InsertWasteClassification,
   type IrrigationSchedule,
-  type InsertIrrigationSchedule
+  type InsertIrrigationSchedule,
+  users, 
+  resourceEntries, 
+  navigationRoutes, 
+  environmentalIssues, 
+  wasteClassifications, 
+  irrigationSchedules
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -245,4 +253,147 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUserPoints(id: string, points: number): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    if (!user) return undefined;
+    
+    const newPoints = user.ecoPoints + points;
+    const newLevel = Math.floor(newPoints / 500) + 1;
+    
+    const [updatedUser] = await db.update(users)
+      .set({ ecoPoints: newPoints, level: newLevel })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async updateUserLevel(id: string, level: number): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set({ level })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser || undefined;
+  }
+
+  // Resource entries
+  async createResourceEntry(insertEntry: InsertResourceEntry): Promise<ResourceEntry> {
+    const baseCredits = 5;
+    const efficiencyBonus = Math.floor(Math.random() * 10);
+    const credits = baseCredits + efficiencyBonus;
+    
+    const [entry] = await db.insert(resourceEntries)
+      .values({ ...insertEntry, credits })
+      .returning();
+    
+    await this.updateUserPoints(insertEntry.userId, credits);
+    
+    return entry;
+  }
+
+  async getResourceEntriesByUser(userId: string): Promise<ResourceEntry[]> {
+    return await db.select().from(resourceEntries)
+      .where(eq(resourceEntries.userId, userId))
+      .orderBy(desc(resourceEntries.date));
+  }
+
+  // Navigation routes
+  async createNavigationRoute(insertRoute: InsertNavigationRoute): Promise<NavigationRoute> {
+    const [route] = await db.insert(navigationRoutes)
+      .values(insertRoute)
+      .returning();
+    
+    await this.updateUserPoints(insertRoute.userId, insertRoute.credits);
+    
+    return route;
+  }
+
+  async getNavigationRoutesByUser(userId: string): Promise<NavigationRoute[]> {
+    return await db.select().from(navigationRoutes)
+      .where(eq(navigationRoutes.userId, userId))
+      .orderBy(desc(navigationRoutes.date));
+  }
+
+  // Environmental issues
+  async createEnvironmentalIssue(insertIssue: InsertEnvironmentalIssue): Promise<EnvironmentalIssue> {
+    const [issue] = await db.insert(environmentalIssues)
+      .values(insertIssue)
+      .returning();
+    
+    await this.updateUserPoints(insertIssue.userId, 10);
+    
+    return issue;
+  }
+
+  async getEnvironmentalIssuesByUser(userId: string): Promise<EnvironmentalIssue[]> {
+    return await db.select().from(environmentalIssues)
+      .where(eq(environmentalIssues.userId, userId))
+      .orderBy(desc(environmentalIssues.createdAt));
+  }
+
+  async getAllEnvironmentalIssues(): Promise<EnvironmentalIssue[]> {
+    return await db.select().from(environmentalIssues)
+      .orderBy(desc(environmentalIssues.createdAt));
+  }
+
+  async updateIssueStatus(id: string, status: string): Promise<EnvironmentalIssue | undefined> {
+    const [updatedIssue] = await db.update(environmentalIssues)
+      .set({ status })
+      .where(eq(environmentalIssues.id, id))
+      .returning();
+    
+    return updatedIssue || undefined;
+  }
+
+  // Waste classifications
+  async createWasteClassification(insertClassification: InsertWasteClassification): Promise<WasteClassification> {
+    const [classification] = await db.insert(wasteClassifications)
+      .values(insertClassification)
+      .returning();
+    
+    await this.updateUserPoints(insertClassification.userId, 5);
+    
+    return classification;
+  }
+
+  async getWasteClassificationsByUser(userId: string): Promise<WasteClassification[]> {
+    return await db.select().from(wasteClassifications)
+      .where(eq(wasteClassifications.userId, userId))
+      .orderBy(desc(wasteClassifications.createdAt));
+  }
+
+  // Irrigation schedules
+  async createIrrigationSchedule(insertSchedule: InsertIrrigationSchedule): Promise<IrrigationSchedule> {
+    const [schedule] = await db.insert(irrigationSchedules)
+      .values(insertSchedule)
+      .returning();
+    
+    return schedule;
+  }
+
+  async getIrrigationSchedulesByUser(userId: string): Promise<IrrigationSchedule[]> {
+    return await db.select().from(irrigationSchedules)
+      .where(eq(irrigationSchedules.userId, userId))
+      .orderBy(desc(irrigationSchedules.createdAt));
+  }
+}
+
+export const storage = new DatabaseStorage();
