@@ -295,7 +295,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             role: 'user',
             parts: [
-              { text: "Analyze this waste item image. Identify the category (e.g., Plastic Bottle, Paper, Glass, Metal Can, Organic Waste, Electronic Waste), determine if it's recyclable (yes/no), and provide a specific recycling or upcycling suggestion. Format: Category: [name], Recyclable: [yes/no], Confidence: [0-100]%, Suggestion: [detailed suggestion]" },
+              { 
+                text: `Analyze this waste item image carefully and provide a detailed classification.
+
+IMPORTANT: Look at the actual item in the image and identify what it is specifically.
+
+Respond in this exact format:
+Category: [specific item name like "Plastic Water Bottle", "Cardboard Box", "Aluminum Can", "Food Waste", "Paper", "Glass Bottle", etc.]
+Recyclable: [yes or no]
+Confidence: [number from 0-100]%
+Suggestion: [specific disposal or recycling instructions for this item]
+
+Be specific about the category - identify the actual item type, not just "waste" or "unknown".` 
+              },
               {
                 inlineData: {
                   mimeType: imageData.split(';')[0].split(':')[1],
@@ -308,17 +320,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const analysisText = result.text || "";
+      console.log("Gemini Vision Analysis:", analysisText);
       
-      // Parse the response
-      const categoryMatch = analysisText.match(/Category:\s*(.+?)(?:,|$)/i);
+      // Parse the response with more flexible regex
+      const categoryMatch = analysisText.match(/Category:\s*([^\n,]+)/i);
       const recyclableMatch = analysisText.match(/Recyclable:\s*(yes|no)/i);
       const confidenceMatch = analysisText.match(/Confidence:\s*(\d+)/);
-      const suggestionMatch = analysisText.match(/Suggestion:\s*(.+?)$/i);
+      const suggestionMatch = analysisText.match(/Suggestion:\s*(.+?)(?:\n|$)/i);
       
-      const category = categoryMatch ? categoryMatch[1].trim() : "Unknown";
+      const category = categoryMatch ? categoryMatch[1].trim() : "Unknown Item";
       const recyclable = recyclableMatch ? recyclableMatch[1].toLowerCase() === "yes" : false;
-      const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 70;
-      const suggestion = suggestionMatch ? suggestionMatch[1].trim() : "Dispose properly in designated bin.";
+      const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 75;
+      const suggestion = suggestionMatch ? suggestionMatch[1].trim() : "Please dispose of this item in the appropriate waste bin.";
+
+      console.log("Parsed values:", { category, recyclable, confidence, suggestion: suggestion.substring(0, 100) });
 
       const classification = await storage.createWasteClassification({
         userId,
