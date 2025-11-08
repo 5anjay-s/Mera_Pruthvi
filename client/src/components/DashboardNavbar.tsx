@@ -5,14 +5,14 @@ import { Badge } from "@/components/ui/badge";
 
 export default function DashboardNavbar() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 glass-strong">
       <div className="flex h-14 items-center gap-4 px-4">
         <div className="flex items-center gap-2 flex-1">
           <div className="font-bold text-lg flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold">MP</span>
+            <div className="h-8 w-8 rounded-md gradient-nature flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold">MP</span>
             </div>
-            <span className="hidden sm:inline">Mera Pruthvi</span>
+            <span className="hidden sm:inline font-semibold">Mera Pruthvi</span>
           </div>
         </div>
         

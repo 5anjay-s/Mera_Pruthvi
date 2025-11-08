@@ -30,13 +30,13 @@ export default function MetricCard({
   const config = statusConfig[status];
   
   return (
-    <Card data-testid={`card-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+    <Card data-testid={`card-metric-${title.toLowerCase().replace(/\s+/g, '-')}`} className="card-gradient hover-elevate transition-all duration-300">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
         {Icon && (
-          <div className={`rounded-md p-2 ${config.bg}`}>
+          <div className={`rounded-md p-2 ${config.bg} animate-float`}>
             <Icon className={`h-4 w-4 ${config.text}`} />
           </div>
         )}

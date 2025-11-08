@@ -11,12 +11,12 @@ import citizensImage from '@assets/generated_images/Citizens_using_environmental
 export default function Landing() {
   return (
     <div className="min-h-screen">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-                <span className="text-primary font-bold">MP</span>
+              <div className="h-8 w-8 rounded-md gradient-nature flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold">MP</span>
               </div>
               <span className="font-bold text-lg">Mera Pruthvi</span>
             </div>
@@ -25,7 +25,7 @@ export default function Landing() {
               <Button variant="ghost" size="sm" data-testid="link-solutions">Solutions</Button>
               <Button variant="ghost" size="sm" data-testid="link-about">About</Button>
               <ThemeToggle />
-              <Button variant="default" size="sm" data-testid="button-get-started">
+              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started">
                 Get Started
               </Button>
             </div>
