@@ -67,13 +67,21 @@ Successfully implemented comprehensive enhancements to the Mera Pruthvi sustaina
 - Maps: Google Maps integrated with real routes ✅
 - Weather: Open-Meteo integrated ✅
 - Analytics: Recharts graphs functional ✅
-- Mock user: `demo-user-123` (authentication pending)
+- Authentication: Simple username/password with bcrypt ✅
 
-**Next Steps:**
-- Install Replit Auth blueprint for user authentication
-- Create login/signup pages
-- Replace mock user ID with authenticated user sessions
-- Protect API routes with authentication middleware
+**Latest Changes - November 8, 2025:**
+
+7. **Simple Username/Password Authentication** ✅
+   - Replaced Replit Auth OIDC with simple username/password authentication
+   - Database schema updated with `username` (unique) and `password` columns
+   - Password hashing with bcrypt (10 salt rounds) - NEVER stores plain text passwords
+   - Session-based authentication using express-session
+   - Login page (client/src/pages/Login.tsx) with form validation
+   - Signup page (client/src/pages/Signup.tsx) with username, password, email, name fields
+   - All API routes protected with `requireAuth` middleware
+   - Secure password comparison using bcrypt.compare()
+   - Passwords never sent to client (filtered in responses)
+   - Session cleanup on user not found (handles deleted accounts)
 
 ## Overview
 
