@@ -105,6 +105,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        // User was deleted or doesn't exist - clear session
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "User not found" });
+      }
+      
       res.json({ ...user, password: undefined }); // Never send password to client
     } catch (error) {
       console.error("Error fetching user:", error);
