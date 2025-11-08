@@ -55,7 +55,7 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   **OpenAI**: Used for advanced NLP and vision capabilities.
 -   **Neon Serverless PostgreSQL**: Production database hosting.
 -   **Google Maps Platform**: For interactive maps, Places autocomplete, and real route calculations.
--   **OpenWeather API**: Provides real-time weather data for irrigation recommendations.
+-   **Google Weather API**: Provides real-time weather data for irrigation recommendations.
 
 ### Key NPM Packages
 
@@ -71,3 +71,4 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   `OPENAI_API_KEY` (OpenAI API key)
 -   `NODE_ENV` (Environment mode)
 -   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key)
+-   `WEATHER_API` (Google Weather API key)
