@@ -40,8 +40,16 @@ const resourceTypes = [
   { value: "gas", label: "Natural Gas", icon: Flame, unit: "cubic meters" },
 ];
 
+const industrySizes = [
+  { value: "small", label: "Small Business (1-50 employees)", multiplier: 0.5 },
+  { value: "medium", label: "Medium Company (51-250 employees)", multiplier: 1.0 },
+  { value: "large", label: "Large Company (251-1000 employees)", multiplier: 2.5 },
+  { value: "enterprise", label: "Enterprise (1000+ employees)", multiplier: 5.0 },
+];
+
 export default function ResourceMonitor() {
   const [resourceType, setResourceType] = useState("");
+  const [industrySize, setIndustrySize] = useState("medium");
   const [amount, setAmount] = useState("");
   const [suggestions, setSuggestions] = useState("");
   const [rating, setRating] = useState<Rating | null>(null);
@@ -53,7 +61,7 @@ export default function ResourceMonitor() {
   });
 
   const createEntry = useMutation({
-    mutationFn: async (data: { resourceType: string; amount: number; unit: string }) => {
+    mutationFn: async (data: { resourceType: string; amount: number; unit: string; industrySize: string }) => {
       const response = await fetch("/api/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,13 +93,14 @@ export default function ResourceMonitor() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resourceType || !amount) return;
+    if (!resourceType || !amount || !industrySize) return;
 
     const selectedType = resourceTypes.find(t => t.value === resourceType);
     createEntry.mutate({
       resourceType,
       amount: parseFloat(amount),
       unit: selectedType?.unit || "units",
+      industrySize,
     });
   };
 
@@ -131,10 +140,26 @@ export default function ResourceMonitor() {
       <Card className="card-gradient" data-testid="card-resource-monitor">
         <CardHeader>
           <CardTitle>Industry Resource Monitor</CardTitle>
-          <CardDescription>Track your resource consumption and get AI-powered optimization suggestions</CardDescription>
+          <CardDescription>Track your resource consumption with industry-specific benchmarks and AI optimization</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="industry-size">Industry Size</Label>
+              <Select value={industrySize} onValueChange={setIndustrySize}>
+                <SelectTrigger id="industry-size" data-testid="select-industry-size">
+                  <SelectValue placeholder="Select your company size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {industrySizes.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="resource-type">Resource Type</Label>
@@ -174,16 +199,16 @@ export default function ResourceMonitor() {
             <Button 
               type="submit" 
               className="w-full gradient-nature border-0" 
-              disabled={createEntry.isPending || !resourceType || !amount}
+              disabled={createEntry.isPending || !resourceType || !amount || !industrySize}
               data-testid="button-submit-resource"
             >
               {createEntry.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  Analyzing with Industry Benchmarks...
                 </>
               ) : (
-                "Submit & Get AI Suggestions"
+                "Analyze & Get AI Suggestions"
               )}
             </Button>
           </form>

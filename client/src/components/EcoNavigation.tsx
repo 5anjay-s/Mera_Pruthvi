@@ -295,6 +295,48 @@ export default function EcoNavigation() {
     return `${minutes}m`;
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation Error",
+        description: "Geolocation is not supported by your browser",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // Reverse geocode to get address
+        if (window.google && window.google.maps) {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+            if (status === 'OK' && results[0]) {
+              setStartLocation(results[0].formatted_address);
+              if (startInputRef.current) {
+                startInputRef.current.value = results[0].formatted_address;
+              }
+              toast({
+                title: "Current Location Set",
+                description: results[0].formatted_address,
+              });
+            }
+          });
+        }
+      },
+      (error) => {
+        toast({
+          title: "Location Error",
+          description: "Unable to get your current location. Please enable location services.",
+          variant: "destructive",
+        });
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card className="card-gradient" data-testid="card-eco-navigation">
@@ -333,13 +375,32 @@ export default function EcoNavigation() {
                       +{selectedMode?.credits} pts
                     </Badge>
                   </div>
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Carbon saved vs. solo driving: 
-                      <span className="font-semibold text-green-600 ml-1" data-testid="text-carbon-saved">
-                        {Math.max(0, (120 * routeData.distance / 1000 - routeData.carbonEmission) / 1000).toFixed(2)} kg CO₂
-                      </span>
+                  <div className="pt-2 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Carbon saved vs. solo driving
                     </p>
+                    {(() => {
+                      const drivingEmission = 120 * routeData.distance / 1000;
+                      const savedEmission = Math.max(0, drivingEmission - routeData.carbonEmission);
+                      const percentage = Math.min(100, (savedEmission / drivingEmission) * 100);
+                      
+                      return (
+                        <>
+                          <div className="space-y-1">
+                            <div className="h-3 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
+                                style={{ width: `${percentage}%` }}
+                                data-testid="carbon-impact-bar"
+                              />
+                            </div>
+                            <p className="text-xs font-semibold text-green-600" data-testid="text-carbon-saved">
+                              {(savedEmission / 1000).toFixed(2)} kg CO₂ saved ({percentage.toFixed(0)}%)
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -350,16 +411,28 @@ export default function EcoNavigation() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">Starting Point</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
-                <Input
-                  ref={startInputRef}
-                  id="start"
-                  placeholder="Enter start location"
-                  className="pl-9"
-                  defaultValue={startLocation}
-                  data-testid="input-start-location"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
+                  <Input
+                    ref={startInputRef}
+                    id="start"
+                    placeholder="Enter start location"
+                    className="pl-9"
+                    defaultValue={startLocation}
+                    data-testid="input-start-location"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={useCurrentLocation}
+                  data-testid="button-use-current-location"
+                  title="Use current location"
+                >
+                  <Navigation className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 

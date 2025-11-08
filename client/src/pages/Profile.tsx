@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogOut, Award, TrendingUp, Leaf, Zap, Trophy, Medal, Star, User as UserIcon, Edit } from "lucide-react";
+import { Award, TrendingUp, Leaf, Zap, Trophy, Medal, Star, Edit, Home } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -18,9 +19,11 @@ export default function Profile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+  const { data: userStats, isLoading } = useQuery<{ user: User; stats: any }>({
+    queryKey: ["/api/user/stats"],
   });
+
+  const user = userStats?.user;
 
   const form = useForm<UpdateUserProfile>({
     resolver: zodResolver(updateUserProfileSchema),
@@ -32,13 +35,15 @@ export default function Profile() {
   });
 
   // Update form when user data loads
-  if (user && !form.formState.isDirty) {
-    form.reset({
-      email: user.email || "",
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-    });
-  }
+  useEffect(() => {
+    if (user && !form.formState.isDirty) {
+      form.reset({
+        email: user.email || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+      });
+    }
+  }, [user, form]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateUserProfile) => {
@@ -61,7 +66,7 @@ export default function Profile() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -75,25 +80,6 @@ export default function Profile() {
       });
     },
   });
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/logout', { method: 'POST' });
-      if (response.ok) {
-        toast({
-          title: "Logged out successfully",
-          description: "You have been logged out of your account.",
-        });
-        setLocation('/');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const onSubmit = (data: UpdateUserProfile) => {
     updateProfileMutation.mutate(data);
@@ -115,19 +101,12 @@ export default function Profile() {
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <div className="text-destructive text-lg font-semibold" data-testid="text-unauthorized">
-                Unauthorized Access
+              <div className="text-muted-foreground text-lg font-semibold">
+                Loading Profile...
               </div>
-              <p className="text-muted-foreground">
-                You need to be logged in to view this page.
+              <p className="text-sm text-muted-foreground">
+                Please wait while we load your profile data.
               </p>
-              <Button 
-                onClick={() => setLocation('/login')} 
-                className="w-full"
-                data-testid="button-back-home"
-              >
-                Go to Login
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -162,11 +141,11 @@ export default function Profile() {
           <h1 className="text-3xl font-bold" data-testid="text-profile-title">My Profile</h1>
           <Button 
             variant="outline" 
-            onClick={handleLogout}
-            data-testid="button-logout"
+            onClick={() => setLocation('/dashboard')}
+            data-testid="button-back-dashboard"
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            <Home className="mr-2 h-4 w-4" />
+            Back to Dashboard
           </Button>
         </div>
 

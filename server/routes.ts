@@ -47,21 +47,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/resources", async (req: any, res) => {
     try {
       const userId = DEMO_USER_ID;
+      const { industrySize, ...rest } = req.body;
+      
       const data = insertResourceEntrySchema.parse({
-        ...req.body,
+        ...rest,
         userId
       });
       
-      const entry = await storage.createResourceEntry(data);
+      // Industry size multipliers
+      const sizeMultipliers: Record<string, number> = {
+        small: 0.5,
+        medium: 1.0,
+        large: 2.5,
+        enterprise: 5.0
+      };
       
-      // Calculate rating based on industry benchmarks
-      const benchmarks: Record<string, { good: number; normal: number; bad: number; unit: string }> = {
+      const sizeKey = typeof industrySize === 'string' && industrySize in sizeMultipliers ? industrySize : "medium";
+      const multiplier = sizeMultipliers[sizeKey];
+      
+      // Base benchmarks for medium-sized companies
+      const baseBenchmarks: Record<string, { good: number; normal: number; bad: number; unit: string }> = {
         electricity: { good: 50, normal: 100, bad: 200, unit: "kWh" },
         water: { good: 100, normal: 200, bad: 400, unit: "L" },
         gas: { good: 20, normal: 50, bad: 100, unit: "m³" }
       };
       
-      const benchmark = benchmarks[data.resourceType.toLowerCase()] || benchmarks.electricity;
+      const baseBenchmark = baseBenchmarks[data.resourceType.toLowerCase()] || baseBenchmarks.electricity;
+      
+      // Adjust benchmarks based on industry size
+      const benchmark = {
+        good: baseBenchmark.good * multiplier,
+        normal: baseBenchmark.normal * multiplier,
+        bad: baseBenchmark.bad * multiplier,
+        unit: baseBenchmark.unit
+      };
+      
       let rating = "Normal";
       let ratingColor = "yellow";
       
@@ -79,16 +99,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ratingColor = "red";
       }
       
-      // Get AI suggestions using Gemini with rating context
-      const prompt = `Analyze this ${rating.toUpperCase()} rated resource usage: ${data.resourceType} - ${data.amount} ${data.unit} (Industry benchmark: ${benchmark.good} ${benchmark.unit} is good, ${benchmark.normal} ${benchmark.unit} is normal). 
+      const entry = await storage.createResourceEntry(data);
+      
+      // Get AI suggestions using Gemini with rating context and industry size
+      const sizeName = sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1);
+      const prompt = `Analyze this ${rating.toUpperCase()} rated resource usage for a ${sizeName} business: ${data.resourceType} - ${data.amount} ${data.unit} (Industry benchmark for ${sizeName}: ${benchmark.good.toFixed(1)} ${benchmark.unit} is good, ${benchmark.normal.toFixed(1)} ${benchmark.unit} is normal). 
       
       Provide 3-4 specific, actionable enhancement points to improve this ${rating} rating:
       1. Immediate action to reduce consumption
       2. Long-term strategy for efficiency
       3. Technology or equipment recommendations
-      4. Behavioral changes
+      4. Behavioral changes for a ${sizeName} operation
       
-      Be specific, practical, and tailored to the current ${rating} rating level.`;
+      Be specific, practical, and tailored to the current ${rating} rating level and ${sizeName} business size.`;
       
       const result = await genAI.models.generateContent({
         model: "gemini-2.5-flash",
@@ -323,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Weather API - Fetch real weather data from Open-Meteo
+  // Weather API - Fetch real weather data from OpenWeather
   app.get("/api/weather", async (req, res) => {
     try {
       const { latitude, longitude } = req.query;
@@ -332,55 +355,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required parameters: latitude, longitude" });
       }
 
+      const openWeatherApiKey = "fd2b5f044c916526911cfb6de0a0c1c1";
+      
       const params = new URLSearchParams({
-        latitude: latitude as string,
-        longitude: longitude as string,
-        current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code",
+        lat: latitude as string,
+        lon: longitude as string,
+        appid: openWeatherApiKey,
+        units: "metric" // For Celsius
       });
 
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?${params}`;
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?${params}`;
       const response = await fetch(weatherUrl);
       
       if (!response.ok) {
-        throw new Error("Failed to fetch weather data");
+        throw new Error("Failed to fetch weather data from OpenWeather");
       }
 
       const data = await response.json();
-      const current = data.current;
 
-      // Map weather codes to conditions
-      const weatherCode = current.weather_code;
-      let condition = "Clear";
+      // Extract weather data from OpenWeather response
+      const temperature = data.main.temp;
+      const humidity = data.main.humidity;
+      const windSpeed = data.wind.speed * 3.6; // Convert m/s to km/h
+      const precipitation = data.rain?.["1h"] || data.snow?.["1h"] || 0; // Rain/snow in last hour (mm)
+      
+      // Map OpenWeather conditions to our conditions
+      const weatherMain = data.weather[0].main;
+      let condition = weatherMain;
       let icon = "Sun";
       
-      if (weatherCode === 0) {
+      if (weatherMain === "Clear") {
         condition = "Clear";
         icon = "Sun";
-      } else if (weatherCode >= 1 && weatherCode <= 3) {
+      } else if (weatherMain === "Clouds") {
         condition = "Partly Cloudy";
         icon = "Cloud";
-      } else if (weatherCode >= 45 && weatherCode <= 48) {
-        condition = "Fog";
-        icon = "Cloud";
-      } else if ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 99)) {
+      } else if (weatherMain === "Rain" || weatherMain === "Drizzle") {
         condition = "Rain";
         icon = "CloudRain";
-      } else if (weatherCode >= 71 && weatherCode <= 77) {
+      } else if (weatherMain === "Snow") {
         condition = "Snow";
+        icon = "CloudRain";
+      } else if (weatherMain === "Mist" || weatherMain === "Fog" || weatherMain === "Haze") {
+        condition = "Fog";
+        icon = "Cloud";
+      } else if (weatherMain === "Thunderstorm") {
+        condition = "Thunderstorm";
         icon = "CloudRain";
       }
 
       res.json({
-        temperature: current.temperature_2m,
-        humidity: current.relative_humidity_2m,
-        precipitation: current.precipitation,
-        windSpeed: current.wind_speed_10m,
+        temperature,
+        humidity,
+        precipitation,
+        windSpeed,
         condition,
         icon,
-        weatherCode
+        description: data.weather[0].description
       });
     } catch (error: any) {
-      console.error("Weather API error:", error);
+      console.error("OpenWeather API error:", error);
       res.status(500).json({ message: error.message });
     }
   });

@@ -1,39 +1,57 @@
-import HeroSection from "@/components/HeroSection";
-import FeatureCard from "@/components/FeatureCard";
-import { Cloud, Trash2, BarChart3, Users, Bot, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useLocation } from "wouter";
-import dashboardImage from '@assets/generated_images/Environmental_monitoring_dashboard_3a9b8185.png';
-import wasteImage from '@assets/generated_images/Modern_recycling_facility_e5597a0d.png';
-import citizensImage from '@assets/generated_images/Citizens_using_environmental_app_bd3b390e.png';
+import { Zap, Recycle, MapPin, Droplets, TrendingUp, Leaf } from "lucide-react";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const features = [
+    {
+      icon: Zap,
+      title: "Resource Monitor",
+      description: "Track electricity, water, and gas usage with AI-powered insights and industry benchmarks."
+    },
+    {
+      icon: MapPin,
+      title: "Eco-Navigation",
+      description: "Get sustainable route recommendations with real-time carbon impact tracking."
+    },
+    {
+      icon: Recycle,
+      title: "Waste Classifier",
+      description: "AI-powered waste sorting with instant recommendations and recycling guidance."
+    },
+    {
+      icon: Droplets,
+      title: "Smart Irrigation",
+      description: "Weather-aware irrigation scheduling powered by real-time environmental data."
+    }
+  ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <nav className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md gradient-nature flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold">MP</span>
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md gradient-nature flex items-center justify-center shadow-lg">
+                <Leaf className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold text-lg">Mera Pruthvi</span>
+              <div>
+                <div className="font-bold text-lg">Mera Pruthvi</div>
+                <div className="text-[10px] text-muted-foreground -mt-1">AI Sustainability Platform</div>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" data-testid="link-features" onClick={() => scrollToSection('features')}>Features</Button>
-              <Button variant="ghost" size="sm" data-testid="link-solutions" onClick={() => scrollToSection('solutions')}>Solutions</Button>
-              <Button variant="ghost" size="sm" data-testid="link-about" onClick={() => scrollToSection('about')}>About</Button>
+            <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Button variant="default" size="sm" className="gradient-nature border-0" data-testid="button-get-started" onClick={() => setLocation('/dashboard')}>
+              <Button 
+                variant="default" 
+                className="gradient-nature border-0" 
+                data-testid="button-get-started"
+                onClick={() => setLocation('/dashboard')}
+              >
                 Get Started
               </Button>
             </div>
@@ -41,243 +59,146 @@ export default function Landing() {
         </div>
       </nav>
 
-      <HeroSection />
+      <section className="pt-32 pb-20 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Build a Sustainable Future with AI
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Track your environmental impact, optimize resource usage, and make data-driven decisions for a greener tomorrow.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button 
+              size="lg" 
+              className="gradient-nature border-0 text-base"
+              onClick={() => setLocation('/dashboard')}
+              data-testid="button-hero-cta"
+            >
+              Start Tracking Impact
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-6 mt-16 max-w-xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-1">Real-time</div>
+              <div className="text-sm text-muted-foreground">AI Insights</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-1">Zero Setup</div>
+              <div className="text-sm text-muted-foreground">Instant Access</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-1">100% Free</div>
+              <div className="text-sm text-muted-foreground">Forever</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <section className="py-20 bg-muted/30" id="features">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Comprehensive Sustainability Platform
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              Everything You Need in One Platform
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Four powerful modules working together to create measurable environmental impact
+            <p className="text-muted-foreground text-lg">
+              Comprehensive sustainability tools powered by Google Gemini AI
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard 
-              icon={Cloud}
-              title="AI Climate Dashboard"
-              description="Real-time monitoring and forecasting of environmental risks including heat, air quality, and flood predictions."
-            />
-            <FeatureCard 
-              icon={Trash2}
-              title="Smart Waste Management"
-              description="Computer vision and ML optimize waste collection routes and improve recycling rates across cities."
-            />
-            <FeatureCard 
-              icon={BarChart3}
-              title="Carbon Tracker"
-              description="Measure and reduce your carbon footprint with AI-powered insights and actionable recommendations."
-            />
-            <FeatureCard 
-              icon={Users}
-              title="Citizen Engagement"
-              description="Empower communities to report issues, earn eco-points, and participate in building a greener future."
-            />
+            {features.map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={idx} className="card-gradient hover-elevate border-primary/20">
+                  <CardContent className="p-6">
+                    <div className="rounded-lg bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="py-20" id="solutions">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-            <div>
-              <h3 className="text-3xl font-bold mb-4">
-                AI-Powered Environmental Intelligence
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Our climate dashboard provides city planners and decision-makers with real-time insights into environmental conditions. Predict heat waves, monitor air quality, and prevent flooding with AI-driven analytics.
-              </p>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Predictive Analytics</div>
-                    <div className="text-sm text-muted-foreground">Forecast environmental risks 7 days ahead</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                    <Cloud className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">Live Monitoring</div>
-                    <div className="text-sm text-muted-foreground">Real-time satellite and IoT sensor data</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">AI Recommendations</div>
-                    <div className="text-sm text-muted-foreground">Actionable insights for impact reduction</div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="relative">
-              <img 
-                src={dashboardImage} 
-                alt="AI Climate Dashboard" 
-                className="rounded-lg shadow-xl w-full"
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-            <div className="order-2 md:order-1 relative">
-              <img 
-                src={wasteImage} 
-                alt="Smart Waste Management" 
-                className="rounded-lg shadow-xl w-full"
-              />
-            </div>
-            <div className="order-1 md:order-2">
-              <h3 className="text-3xl font-bold mb-4">
-                Optimize Waste Collection with Computer Vision
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Our smart waste management system uses AI to classify waste types, predict bin overflow, and optimize collection routes. Reduce costs while increasing recycling rates.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-primary">35%</div>
-                    <div className="text-xs text-muted-foreground">Cost Reduction</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-primary">60%</div>
-                    <div className="text-xs text-muted-foreground">Recycling Rate</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-primary">24/7</div>
-                    <div className="text-xs text-muted-foreground">Monitoring</div>
-                  </CardContent>
-                </Card>
+      <section className="py-20 px-4">
+        <div className="max-w-3xl mx-auto">
+          <Card className="card-gradient border-primary/20">
+            <CardContent className="p-8 md:p-12">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-16 w-16 rounded-full gradient-nature flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1">
+                    Track Your Impact Today
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Join the sustainability revolution with AI-powered tools
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 className="text-3xl font-bold mb-4">
-                Engage Citizens, Build Community
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                GreenPulse empowers every citizen to become an environmental guardian. Report issues, track your impact, and earn rewards for sustainable actions.
-              </p>
-              <Button size="lg" className="mt-4" data-testid="button-download-app">
-                Download GreenPulse App
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 text-sm">
+                  <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  </div>
+                  <span>Monitor resources with industry baseline comparisons</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm">
+                  <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  </div>
+                  <span>Calculate carbon savings from eco-friendly travel choices</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm">
+                  <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  </div>
+                  <span>Classify waste and get AI-powered recycling guidance</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm">
+                  <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  </div>
+                  <span>Optimize irrigation with real-time weather data</span>
+                </li>
+              </ul>
+              <Button 
+                size="lg" 
+                className="w-full gradient-nature border-0"
+                onClick={() => setLocation('/dashboard')}
+                data-testid="button-cta-card"
+              >
+                Launch Dashboard
               </Button>
-            </div>
-            <div className="relative">
-              <img 
-                src={citizensImage} 
-                alt="Citizen Engagement" 
-                className="rounded-lg shadow-xl w-full"
-              />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30" id="about">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Making Every City and Citizen Count
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12">
-            Turn complex environmental data into simple, actionable intelligence for a low-carbon, sustainable future.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold font-mono text-primary mb-2">250+</div>
-                <div className="text-sm text-muted-foreground">Cities Using GaiaMind</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold font-mono text-primary mb-2">50K</div>
-                <div className="text-sm text-muted-foreground">Tons CO₂ Reduced</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold font-mono text-primary mb-2">1M+</div>
-                <div className="text-sm text-muted-foreground">Active Citizens</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl font-bold font-mono text-primary mb-2">98%</div>
-                <div className="text-sm text-muted-foreground">Satisfaction Rate</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" variant="default" data-testid="button-request-demo-footer">
-              Request a Demo
-            </Button>
-            <Button size="lg" variant="outline" data-testid="button-contact-sales">
-              Contact Sales
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-background border-t py-12">
+      <footer className="border-t py-8 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h4 className="font-semibold mb-3">Platform</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Climate Dashboard</li>
-                <li>Waste Management</li>
-                <li>Carbon Tracker</li>
-                <li>GreenPulse App</li>
-              </ul>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-md gradient-nature flex items-center justify-center">
+                <Leaf className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold">Mera Pruthvi</span>
             </div>
-            <div>
-              <h4 className="font-semibold mb-3">Resources</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Documentation</li>
-                <li>API Reference</li>
-                <li>Case Studies</li>
-                <li>Blog</li>
-              </ul>
+            <div className="text-sm text-muted-foreground text-center">
+              © 2025 Mera Pruthvi. Building a sustainable future with AI.
             </div>
-            <div>
-              <h4 className="font-semibold mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>About Us</li>
-                <li>Careers</li>
-                <li>Partners</li>
-                <li>Contact</li>
-              </ul>
+            <div className="flex gap-6 text-sm text-muted-foreground">
+              <button className="hover:text-foreground transition-colors">Privacy</button>
+              <button className="hover:text-foreground transition-colors">Terms</button>
             </div>
-            <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Security</li>
-                <li>Compliance</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 Mera Pruthvi (GaiaMind). Building a sustainable future with AI.</p>
           </div>
         </div>
       </footer>

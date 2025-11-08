@@ -135,6 +135,20 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="card-gradient hover-elevate gradient-nature border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-white/20 p-3">
+                  <Award className="h-6 w-6 text-white" />
+                </div>
+                <div className="text-white">
+                  <p className="text-2xl font-bold">Level {user?.level || 1}</p>
+                  <p className="text-xs text-white/80">Total Impact</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -180,6 +194,44 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-4">
+            <Card className="card-gradient border-primary/20" data-testid="card-impact-summary">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Leaf className="h-4 w-4 text-primary" />
+                  Your Sustainable Impact
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium">Total CO₂ Saved</span>
+                      <Leaf className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold text-primary">{stats?.carbonSaved?.toFixed(1) || 0} kg</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Equivalent to {((stats?.carbonSaved || 0) / 411).toFixed(1)} trees planted
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-md bg-muted/30 text-center">
+                      <p className="text-lg font-bold">{stats?.totalResources || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Resources Tracked</p>
+                    </div>
+                    <div className="p-2 rounded-md bg-muted/30 text-center">
+                      <p className="text-lg font-bold">{stats?.totalRoutes || 0}</p>
+                      <p className="text-[10px] text-muted-foreground">Eco-Routes</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Every sustainable choice counts! Your actions are making a real difference in reducing carbon emissions and preserving our planet.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="card-gradient border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -188,7 +240,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="h-[240px] overflow-y-auto space-y-2 pr-2 custom-scrollbar" data-testid="chat-history">
+                <div className="h-[160px] overflow-y-auto space-y-2 pr-2 custom-scrollbar" data-testid="chat-history">
                   {chatHistory.length === 0 ? (
                     <div className="text-center text-muted-foreground text-xs py-12">
                       <Sparkles className="h-6 w-6 mx-auto mb-2 opacity-40" />
