@@ -60,8 +60,20 @@ export default function EcoNavigation() {
   useEffect(() => {
     const initMap = async () => {
       try {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+        
+        if (!apiKey) {
+          console.error('Google Maps API key not found');
+          toast({
+            title: "Maps Error",
+            description: "Google Maps API key is not configured",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         const loader = new Loader({
-          apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+          apiKey: apiKey,
           version: 'weekly',
           libraries: ['places', 'routes'],
         });
