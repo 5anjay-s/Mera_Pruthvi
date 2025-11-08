@@ -4,6 +4,8 @@ import { useLocation } from "wouter";
 import heroImage from '@assets/generated_images/Sustainable_city_aerial_view_6479dcdc.png';
 
 export default function HeroSection() {
+  const [, setLocation] = useLocation();
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div 
@@ -27,8 +29,8 @@ export default function HeroSection() {
               size="lg" 
               variant="default"
               className="gradient-nature border-0 text-white text-lg px-8 py-6 h-auto"
-              data-testid="button-get-started"
-              onClick={() => window.location.href = '/api/login'}
+              data-testid="button-get-started-hero"
+              onClick={() => setLocation('/login')}
             >
               Get Started
               <ArrowRight className="ml-2 h-5 w-5" />
