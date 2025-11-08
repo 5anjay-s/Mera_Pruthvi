@@ -15,7 +15,33 @@ const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 // Demo user ID for simplified access without authentication
 const DEMO_USER_ID = "demo-user-123";
 
+// Ensure demo user exists in database
+async function ensureDemoUser() {
+  try {
+    const existingUser = await storage.getUser(DEMO_USER_ID);
+    if (!existingUser) {
+      console.log("Creating demo user...");
+      await storage.createUser({
+        id: DEMO_USER_ID,
+        username: "demo",
+        password: "",
+        email: "demo@merapruthvi.com",
+        firstName: "Demo",
+        lastName: "User",
+        ecoPoints: 0,
+        level: 1,
+        carbonFootprint: 0,
+      });
+      console.log("Demo user created successfully");
+    }
+  } catch (error) {
+    console.error("Error ensuring demo user:", error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Ensure demo user exists on startup
+  await ensureDemoUser();
   
   // Resource Entries
   app.post("/api/resources", async (req: any, res) => {
