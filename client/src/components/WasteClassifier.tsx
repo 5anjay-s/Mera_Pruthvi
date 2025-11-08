@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Upload, Image as ImageIcon, CheckCircle2, XCircle, Loader2, Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -207,7 +207,7 @@ export default function WasteClassifier() {
                 {/* Disposal Instructions */}
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
                   <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <span>💡</span>
+                    <Lightbulb className="h-4 w-4 text-primary" />
                     Disposal Instructions:
                   </p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{result.suggestion}</p>
