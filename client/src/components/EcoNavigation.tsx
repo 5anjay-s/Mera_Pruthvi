@@ -8,7 +8,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { MapPin, Navigation, Leaf, Car, Bus, Bike, FootprintsIcon, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader } from '@googlemaps/js-api-loader';
 
 declare global {
   interface Window {
@@ -72,15 +71,36 @@ export default function EcoNavigation() {
           return;
         }
         
-        const loader = new Loader({
-          apiKey: apiKey,
-          version: 'weekly',
-          libraries: ['places'],
-        });
+        // Load Google Maps dynamically with modern script loading
+        if (!window.google) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          
+          await new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+            
+            script.onload = () => {
+              // Wait for google.maps to be fully initialized with timeout
+              const checkReady = setInterval(() => {
+                attempts++;
+                if (window.google && window.google.maps && window.google.maps.Map) {
+                  clearInterval(checkReady);
+                  resolve(null);
+                } else if (attempts >= maxAttempts) {
+                  clearInterval(checkReady);
+                  reject(new Error('Google Maps failed to initialize - timeout'));
+                }
+              }, 100);
+            };
+            script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+            document.head.appendChild(script);
+          });
+        }
 
-        await loader.load();
-
-        if (mapRef.current && !googleMapRef.current && window.google) {
+        if (mapRef.current && !googleMapRef.current && window.google && window.google.maps) {
           // Default to user's location or fallback to a default location
           let initialCenter = { lat: 28.6139, lng: 77.2090 }; // Delhi, India default
 
@@ -140,11 +160,11 @@ export default function EcoNavigation() {
             });
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error loading Google Maps:", error);
         toast({
           title: "Maps Error",
-          description: "Failed to load Google Maps. Please check your API key.",
+          description: error.message || "Failed to load Google Maps. Please check your API key.",
           variant: "destructive",
         });
       }

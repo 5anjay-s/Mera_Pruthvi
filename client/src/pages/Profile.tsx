@@ -42,10 +42,16 @@ export default function Profile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateUserProfile) => {
+      // Remove empty strings and convert to undefined for optional fields
+      const cleanData: UpdateUserProfile = {};
+      if (data.email && data.email.trim()) cleanData.email = data.email.trim();
+      if (data.firstName && data.firstName.trim()) cleanData.firstName = data.firstName.trim();
+      if (data.lastName && data.lastName.trim()) cleanData.lastName = data.lastName.trim();
+      
       const response = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(cleanData),
         credentials: "include",
       });
       if (!response.ok) {
