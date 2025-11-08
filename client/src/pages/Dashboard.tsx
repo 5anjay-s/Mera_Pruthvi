@@ -25,6 +25,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 export default function Dashboard() {
   const [chatMessage, setChatMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [activeTab, setActiveTab] = useState("resources");
 
   const { data: userStats } = useQuery({
     queryKey: ["/api/user/stats"],
@@ -143,9 +144,9 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="resources" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+          <div className="lg:col-span-2 space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="resources" data-testid="tab-resources">
                   <Zap className="h-4 w-4 mr-2" />
                   Resources
@@ -161,10 +162,6 @@ export default function Dashboard() {
                 <TabsTrigger value="irrigation" data-testid="tab-irrigation">
                   <Droplets className="h-4 w-4 mr-2" />
                   Irrigation
-                </TabsTrigger>
-                <TabsTrigger value="analytics" data-testid="tab-analytics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics
                 </TabsTrigger>
               </TabsList>
               
@@ -183,95 +180,93 @@ export default function Dashboard() {
               <TabsContent value="irrigation" className="mt-6">
                 <IrrigationAssistant />
               </TabsContent>
-
-              <TabsContent value="analytics" className="mt-6">
-                <AnalyticsTab />
-              </TabsContent>
             </Tabs>
+
+            <DynamicAnalytics activeTab={activeTab} />
           </div>
 
-          <div className="space-y-6">
-            <Card className="card-gradient">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  AI Sustainability Copilot
+          <div className="space-y-4">
+            <Card className="card-gradient border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  AI Copilot
                 </CardTitle>
-                <CardDescription>Ask anything about sustainability</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="h-[300px] overflow-y-auto space-y-3 mb-4" data-testid="chat-history">
-                    {chatHistory.length === 0 ? (
-                      <div className="text-center text-muted-foreground text-sm py-8">
-                        <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>Ask me about carbon footprint,</p>
-                        <p>waste management, or eco-tips!</p>
+              <CardContent className="space-y-3">
+                <div className="h-[240px] overflow-y-auto space-y-2 pr-2 custom-scrollbar" data-testid="chat-history">
+                  {chatHistory.length === 0 ? (
+                    <div className="text-center text-muted-foreground text-xs py-12">
+                      <Sparkles className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                      <p className="text-xs">Ask about sustainability,</p>
+                      <p className="text-xs">carbon, or eco-tips</p>
+                    </div>
+                  ) : (
+                    chatHistory.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`p-2 rounded-lg text-xs ${
+                          msg.role === "user"
+                            ? "bg-primary/10 ml-6"
+                            : "bg-muted/50 mr-6"
+                        }`}
+                      >
+                        <p>{msg.content}</p>
                       </div>
-                    ) : (
-                      chatHistory.map((msg, i) => (
-                        <div
-                          key={i}
-                          className={`p-3 rounded-lg ${
-                            msg.role === "user"
-                              ? "bg-primary/10 ml-8"
-                              : "bg-muted/50 mr-8"
-                          }`}
-                        >
-                          <p className="text-sm">{msg.content}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                    ))
+                  )}
+                </div>
 
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ask AI assistant..."
-                      value={chatMessage}
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                      disabled={sendMessage.isPending}
-                      data-testid="input-chat-message"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!chatMessage.trim() || sendMessage.isPending}
-                      className="gradient-nature border-0"
-                      data-testid="button-send-message"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ask AI..."
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    disabled={sendMessage.isPending}
+                    className="text-sm h-9"
+                    data-testid="input-chat-message"
+                  />
+                  <Button
+                    size="icon"
+                    onClick={handleSendMessage}
+                    disabled={!chatMessage.trim() || sendMessage.isPending}
+                    className="gradient-nature border-0 shrink-0"
+                    data-testid="button-send-message"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="card-gradient">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Weekly Overview
+            <Card className="card-gradient border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Quick Stats
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span className="text-sm">Resources Monitored</span>
-                  <Badge variant="secondary">{stats?.totalResources || 0}</Badge>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                  <span className="text-xs">Resources</span>
+                  <Badge variant="secondary" className="text-xs h-5">{stats?.totalResources || 0}</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span className="text-sm">Eco-Routes</span>
-                  <Badge variant="secondary">{stats?.totalRoutes || 0}</Badge>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                  <span className="text-xs">Eco-Routes</span>
+                  <Badge variant="secondary" className="text-xs h-5">{stats?.totalRoutes || 0}</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <span className="text-sm">Environmental Issues</span>
-                  <Badge variant="secondary">{stats?.totalIssues || 0}</Badge>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                  <span className="text-xs">Issues Reported</span>
+                  <Badge variant="secondary" className="text-xs h-5">{stats?.totalIssues || 0}</Badge>
                 </div>
-                <div className="p-3 rounded-lg gradient-nature text-white">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Impact</span>
-                    <Award className="h-4 w-4" />
+                <div className="p-2.5 rounded-lg gradient-nature text-white mt-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">Total Impact</span>
+                    <Award className="h-3.5 w-3.5" />
                   </div>
-                  <p className="text-2xl font-bold mt-1">{user?.ecoPoints || 0} Points</p>
+                  <p className="text-xl font-bold">{user?.ecoPoints || 0} Points</p>
+                  <p className="text-xs opacity-90">Level {user?.level || 1}</p>
                 </div>
               </CardContent>
             </Card>
@@ -282,267 +277,213 @@ export default function Dashboard() {
   );
 }
 
-function AnalyticsTab() {
+function DynamicAnalytics({ activeTab }: { activeTab: string }) {
   const { data: analyticsData, isLoading } = useQuery({
     queryKey: ["/api/analytics"],
   });
-
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="card-gradient">
-              <CardContent className="p-6">
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="card-gradient">
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-64 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const analytics = analyticsData as any;
-  const totalPoints = analytics?.ecoPointsHistory?.[analytics.ecoPointsHistory.length - 1]?.points || 0;
-  const totalCarbon = analytics?.carbonSavingsHistory?.[analytics.carbonSavingsHistory.length - 1]?.carbonSaved || 0;
-  const mostUsedResource = analytics?.resourceBreakdown?.reduce((max: any, resource: any) => 
-    resource.count > (max?.count || 0) ? resource : max, null
-  );
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
+  if (isLoading) {
+    return (
+      <Card className="card-gradient">
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-80 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const analytics = analyticsData as any;
+
+  const chartConfigs = {
+    resources: {
+      title: "Resource Consumption Trend",
+      description: "Track your resource usage patterns",
+      icon: Zap,
+      component: (
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={analytics?.resourceBreakdown || []}>
+            <defs>
+              <linearGradient id="resourceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis 
+              dataKey="resourceType" 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickMargin={8}
+            />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'hsl(var(--card))', 
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px'
+              }}
+              formatter={(value: any) => [value, 'Amount']}
+            />
+            <Bar dataKey="totalAmount" fill="url(#resourceGradient)" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    },
+    navigation: {
+      title: "Carbon Savings from Eco-Routes",
+      description: "CO₂ emissions reduced through sustainable travel",
+      icon: Leaf,
+      component: (
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={analytics?.carbonSavingsHistory || []}>
+            <defs>
+              <linearGradient id="carbonGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={formatDate}
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickMargin={8}
+            />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'hsl(var(--card))', 
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px'
+              }}
+              formatter={(value: any) => [`${value} kg`, 'CO₂ Saved']}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="carbonSaved" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={3}
+              fill="url(#carbonGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )
+    },
+    waste: {
+      title: "Waste Classification Trend",
+      description: "Track your waste sorting and recycling activity",
+      icon: Recycle,
+      component: (
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={analytics?.wasteClassificationHistory || []}>
+            <defs>
+              <linearGradient id="wasteGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={formatDate}
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickMargin={8}
+            />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'hsl(var(--card))', 
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px'
+              }}
+              formatter={(value: any) => [value, 'Items Classified']}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="count" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={3}
+              fill="url(#wasteGradient)"
+              dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )
+    },
+    irrigation: {
+      title: "Eco-Points Growth",
+      description: "Your overall sustainability impact over time",
+      icon: TrendingUp,
+      component: (
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={analytics?.ecoPointsHistory || []}>
+            <defs>
+              <linearGradient id="pointsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis 
+              dataKey="date" 
+              tickFormatter={formatDate}
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickMargin={8}
+            />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'hsl(var(--card))', 
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '12px',
+                padding: '12px'
+              }}
+              formatter={(value: any) => [value, 'Eco-Points']}
+            />
+            <Area 
+              type="monotone" 
+              dataKey="points" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={3}
+              fill="url(#pointsGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )
+    }
+  };
+
+  const config = chartConfigs[activeTab as keyof typeof chartConfigs] || chartConfigs.resources;
+  const Icon = config.icon;
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="card-gradient hover-elevate" data-testid="card-total-points">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-3">
-                <TrendingUp className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary">{totalPoints}</p>
-                <p className="text-xs text-muted-foreground">Total Eco-Points</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient hover-elevate" data-testid="card-carbon-saved">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Leaf className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary">{totalCarbon.toFixed(1)} kg</p>
-                <p className="text-xs text-muted-foreground">CO₂ Saved</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient hover-elevate" data-testid="card-most-used">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Zap className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold capitalize">{mostUsedResource?.resourceType || "N/A"}</p>
-                <p className="text-xs text-muted-foreground">Most Tracked Resource</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Eco-Points Trend
-            </CardTitle>
-            <CardDescription>Cumulative points over the last 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analytics?.ecoPointsHistory || []}>
-                <defs>
-                  <linearGradient id="pointsGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={formatDate}
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  labelFormatter={(value) => `Date: ${value}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="points" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  fill="url(#pointsGradient)"
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Leaf className="h-5 w-5 text-primary" />
-              Carbon Savings
-            </CardTitle>
-            <CardDescription>Cumulative CO₂ saved over the last 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={analytics?.carbonSavingsHistory || []}>
-                <defs>
-                  <linearGradient id="carbonGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={formatDate}
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  labelFormatter={(value) => `Date: ${value}`}
-                  formatter={(value: any) => [`${value} kg`, 'CO₂ Saved']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="carbonSaved" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  fill="url(#carbonGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              Resource Consumption
-            </CardTitle>
-            <CardDescription>Total usage by resource type</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics?.resourceBreakdown || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="resourceType" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  formatter={(value: any, name: string) => {
-                    if (name === 'totalAmount') return [value, 'Total Amount'];
-                    if (name === 'count') return [value, 'Entries'];
-                    return [value, name];
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="totalAmount" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Activity Breakdown
-            </CardTitle>
-            <CardDescription>Distribution of tracked activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={analytics?.activityBreakdown || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="hsl(var(--primary))"
-                  dataKey="count"
-                >
-                  {(analytics?.activityBreakdown || []).map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card className="card-gradient" data-testid="dynamic-analytics-card">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon className="h-5 w-5 text-primary" />
+          {config.title}
+        </CardTitle>
+        <CardDescription>{config.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {config.component}
+      </CardContent>
+    </Card>
   );
 }

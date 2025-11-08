@@ -494,12 +494,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       thirtyDaysAgo.setDate(today.getDate() - 30);
 
       // Initialize daily data structure for last 30 days
-      const dailyData = new Map<string, { points: number; carbonSaved: number }>();
+      const dailyData = new Map<string, { points: number; carbonSaved: number; wasteCount: number }>();
       for (let i = 0; i < 30; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() - (29 - i));
         const dateStr = date.toISOString().split('T')[0];
-        dailyData.set(dateStr, { points: 0, carbonSaved: 0 });
+        dailyData.set(dateStr, { points: 0, carbonSaved: 0, wasteCount: 0 });
       }
 
       // Aggregate resource entries by date
@@ -522,12 +522,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Add waste classification credits
+      // Add waste classification credits and count
       wasteClassifications.forEach(classification => {
         const dateStr = new Date(classification.createdAt).toISOString().split('T')[0];
         if (dailyData.has(dateStr)) {
           const day = dailyData.get(dateStr)!;
           day.points += 5; // 5 points per waste classification
+          day.wasteCount += 1;
         }
       });
 
@@ -542,6 +543,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const carbonSavingsHistory = Array.from(dailyData.entries()).map(([date, data]) => {
         cumulativeCarbonSaved += data.carbonSaved;
         return { date, carbonSaved: parseFloat(cumulativeCarbonSaved.toFixed(2)) };
+      });
+
+      // Waste classification history
+      let cumulativeWasteCount = 0;
+      const wasteClassificationHistory = Array.from(dailyData.entries()).map(([date, data]) => {
+        cumulativeWasteCount += data.wasteCount;
+        return { date, count: cumulativeWasteCount };
       });
 
       // Resource breakdown by type
@@ -573,6 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         ecoPointsHistory,
         carbonSavingsHistory,
+        wasteClassificationHistory,
         resourceBreakdown,
         activityBreakdown
       });
