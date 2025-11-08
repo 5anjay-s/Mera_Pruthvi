@@ -138,20 +138,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="card-gradient hover-elevate">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <Activity className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats?.totalIssues || 0}</p>
-                  <p className="text-xs text-muted-foreground">Issues Reported</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
