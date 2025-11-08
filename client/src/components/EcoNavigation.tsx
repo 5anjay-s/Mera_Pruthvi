@@ -144,6 +144,16 @@ export default function EcoNavigation() {
               const place = startAutocompleteRef.current?.getPlace();
               if (place?.formatted_address) {
                 setStartLocation(place.formatted_address);
+              } else if (place?.name) {
+                setStartLocation(place.name);
+              }
+            });
+            
+            // Also handle input change events
+            startInputRef.current.addEventListener('blur', () => {
+              const value = startInputRef.current?.value;
+              if (value && value.length > 3) {
+                setStartLocation(value);
               }
             });
           }
@@ -156,6 +166,16 @@ export default function EcoNavigation() {
               const place = endAutocompleteRef.current?.getPlace();
               if (place?.formatted_address) {
                 setEndLocation(place.formatted_address);
+              } else if (place?.name) {
+                setEndLocation(place.name);
+              }
+            });
+            
+            // Also handle input change events
+            endInputRef.current.addEventListener('blur', () => {
+              const value = endInputRef.current?.value;
+              if (value && value.length > 3) {
+                setEndLocation(value);
               }
             });
           }
