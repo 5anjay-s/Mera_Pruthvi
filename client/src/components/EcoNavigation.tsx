@@ -543,9 +543,7 @@ export default function EcoNavigation() {
                         </div>
                         <div className="text-right">
                           <p className={`font-semibold ${
-                            parseFloat(modeEmission) === 0 ? 'text-green-600' : 
-                            parseFloat(modeEmission) < 50 ? 'text-blue-600' :
-                            parseFloat(modeEmission) < 100 ? 'text-yellow-600' : 'text-red-600'
+                            parseFloat(modeEmission) === 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {modeEmission} kg CO₂
                           </p>
@@ -605,7 +603,7 @@ export default function EcoNavigation() {
                       <div>
                         <p className="font-medium text-sm">{route.startLocation} → {route.endLocation}</p>
                         <p className="text-xs text-muted-foreground">
-                          {route.distance.toFixed(1)} km • {route.carbonEmission.toFixed(2)} kg CO₂
+                          {route.distance.toFixed(1)} km • <span className="text-red-600 font-semibold">{route.carbonEmission.toFixed(2)} kg CO₂</span>
                         </p>
                       </div>
                     </div>
