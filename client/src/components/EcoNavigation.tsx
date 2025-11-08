@@ -486,6 +486,61 @@ export default function EcoNavigation() {
             </div>
           </div>
 
+          {/* Carbon Emissions Comparison Table */}
+          {routeData && (
+            <Card className="bg-muted/30">
+              <CardHeader>
+                <CardTitle className="text-base">Carbon Emissions Comparison</CardTitle>
+                <CardDescription>See how different transport modes impact the environment for this route</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {transportModes.map((mode) => {
+                    const Icon = mode.icon;
+                    const distanceKm = routeData.distance / 1000;
+                    const modeEmission = (mode.carbonFactor * distanceKm).toFixed(2);
+                    const isCurrentMode = selectedMode?.id === mode.id;
+                    
+                    return (
+                      <div
+                        key={mode.id}
+                        className={`flex items-center justify-between p-3 rounded-lg transition-all ${
+                          isCurrentMode ? 'bg-primary/10 border border-primary/20' : 'bg-card'
+                        }`}
+                        data-testid={`carbon-comparison-${mode.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className={`h-5 w-5 ${isCurrentMode ? 'text-primary' : mode.color}`} />
+                          <div>
+                            <p className={`font-medium text-sm ${isCurrentMode ? 'text-primary' : ''}`}>
+                              {mode.name}
+                              {isCurrentMode && <span className="ml-2 text-xs">(Selected)</span>}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {mode.carbonFactor === 0 ? 'Zero emissions' : `${mode.carbonFactor}g CO₂/km`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-semibold ${
+                            parseFloat(modeEmission) === 0 ? 'text-green-600' : 
+                            parseFloat(modeEmission) < 50 ? 'text-blue-600' :
+                            parseFloat(modeEmission) < 100 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {modeEmission} kg CO₂
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            +{mode.credits} credits
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Loading State */}
           {isLoadingRoute && (
             <div className="flex items-center justify-center p-4" data-testid="loading-route">
