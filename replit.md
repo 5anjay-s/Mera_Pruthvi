@@ -67,8 +67,87 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 ### Environment Variables Required
 
 -   `DATABASE_URL` (PostgreSQL connection string)
--   `GEMINI_API_KEY` (Google Gemini AI API key)
+-   `GEMINI_API_KEY` (Google Gemini AI API key) - **CRITICAL for production**
 -   `OPENAI_API_KEY` (OpenAI API key)
 -   `NODE_ENV` (Environment mode)
--   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key)
--   `WEATHER_API` (Google Weather API key)
+-   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key) - **CRITICAL for production**
+-   `WEATHER_API` (Google Weather API key) - **CRITICAL for production**
+
+## Production Deployment
+
+### Required Environment Variables for Published Apps
+
+When deploying to production (published link), the following environment variables **must** be configured in your deployment settings:
+
+#### Critical API Keys (Required)
+1. **GEMINI_API_KEY** - Powers all AI features:
+   - Resource consumption analysis and suggestions
+   - Waste classification with image recognition
+   - Irrigation scheduling recommendations
+   - Environmental issue analysis
+
+2. **WEATHER_API** - Powers weather features:
+   - Real-time weather data for irrigation scheduling
+   - Weather-based recommendations
+   - API endpoint: `https://weather.googleapis.com/v1/currentConditions:lookup`
+
+3. **GOOGLE_MAPS_API_KEY** - Powers navigation features:
+   - Interactive maps and route calculation
+   - Places autocomplete
+   - Eco-friendly navigation with carbon comparison
+
+#### Optional API Keys
+- `OPENAI_API_KEY` - For advanced NLP features (currently optional)
+
+### Troubleshooting Production Issues
+
+#### Symptom: AI Features Show Predefined Values
+
+**Problem**: Resource Analyzer, Waste Classifier, or Weather API returning fallback/predefined data instead of real AI-generated content.
+
+**Cause**: Missing API keys in production environment (GEMINI_API_KEY or WEATHER_API).
+
+**Solution**:
+1. Check deployment logs for warning messages:
+   - `⚠️ WARNING: Missing environment variables: GEMINI_API_KEY, WEATHER_API`
+   - `⚠️ Some AI features will fall back to predefined values.`
+
+2. Configure missing environment variables in deployment settings:
+   - Navigate to your deployment/published app settings
+   - Add the missing API keys as secrets
+   - Redeploy the application
+
+3. Verify environment variables are set:
+   - Server startup should show: `✅ All required environment variables are configured`
+
+#### Symptom: Resource Analyzer Returns Generic Suggestions
+
+**Problem**: Resource entries are created but AI suggestions are generic or say "AI suggestions currently unavailable."
+
+**Cause**: GEMINI_API_KEY not configured in production.
+
+**Solution**: Add GEMINI_API_KEY to deployment secrets and redeploy.
+
+#### Symptom: Waste Classifier Returns Error
+
+**Problem**: Image upload fails with message "AI waste classification unavailable."
+
+**Cause**: GEMINI_API_KEY not configured in production.
+
+**Solution**: Add GEMINI_API_KEY to deployment secrets and redeploy.
+
+#### Symptom: Weather Data Shows Default Values
+
+**Problem**: Weather API returns hardcoded values (e.g., 25°C, 60% humidity).
+
+**Cause**: WEATHER_API key not configured in production.
+
+**Solution**: Add WEATHER_API to deployment secrets and redeploy.
+
+### Environment Variable Validation
+
+The server performs automatic validation on startup:
+- ✅ Success: All required environment variables are configured
+- ⚠️ Warning: Lists missing variables and explains which features will be affected
+
+Check server logs after deployment to confirm all variables are properly set.

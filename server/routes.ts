@@ -12,6 +12,11 @@ import { GoogleGenAI } from "@google/genai";
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
+// Helper function to check if Gemini API is available
+function isGeminiAvailable(): boolean {
+  return !!process.env.GEMINI_API_KEY;
+}
+
 // Demo user ID for simplified access without authentication
 const DEMO_USER_ID = "demo-user-123";
 
@@ -102,22 +107,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const entry = await storage.createResourceEntry(data);
       
       // Get AI suggestions using Gemini with rating context and industry size
-      const sizeName = sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1);
-      const prompt = `Analyze this ${rating.toUpperCase()} rated resource usage for a ${sizeName} business: ${data.resourceType} - ${data.amount} ${data.unit} (Industry benchmark for ${sizeName}: ${benchmark.good.toFixed(1)} ${benchmark.unit} is good, ${benchmark.normal.toFixed(1)} ${benchmark.unit} is normal). 
+      let suggestions = "AI suggestions currently unavailable. Please configure GEMINI_API_KEY.";
       
-      Provide 3-4 specific, actionable enhancement points to improve this ${rating} rating:
-      1. Immediate action to reduce consumption
-      2. Long-term strategy for efficiency
-      3. Technology or equipment recommendations
-      4. Behavioral changes for a ${sizeName} operation
-      
-      Be specific, practical, and tailored to the current ${rating} rating level and ${sizeName} business size.`;
-      
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
-      const suggestions = result.text || "Unable to generate suggestions";
+      if (!isGeminiAvailable()) {
+        console.warn("⚠️  GEMINI_API_KEY not configured - using fallback suggestions");
+      } else {
+        try {
+          const sizeName = sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1);
+          const prompt = `Analyze this ${rating.toUpperCase()} rated resource usage for a ${sizeName} business: ${data.resourceType} - ${data.amount} ${data.unit} (Industry benchmark for ${sizeName}: ${benchmark.good.toFixed(1)} ${benchmark.unit} is good, ${benchmark.normal.toFixed(1)} ${benchmark.unit} is normal). 
+          
+          Provide 3-4 specific, actionable enhancement points to improve this ${rating} rating:
+          1. Immediate action to reduce consumption
+          2. Long-term strategy for efficiency
+          3. Technology or equipment recommendations
+          4. Behavioral changes for a ${sizeName} operation
+          
+          Be specific, practical, and tailored to the current ${rating} rating level and ${sizeName} business size.`;
+          
+          const result = await genAI.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          });
+          suggestions = result.text || "Unable to generate suggestions";
+        } catch (error: any) {
+          console.error("❌ Gemini AI error:", error.message);
+          suggestions = "Unable to generate AI suggestions at this time.";
+        }
+      }
       
       res.json({ 
         entry, 
@@ -288,6 +304,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = DEMO_USER_ID;
       const { imageData } = req.body;
       
+      if (!isGeminiAvailable()) {
+        console.warn("⚠️  GEMINI_API_KEY not configured - cannot classify waste");
+        return res.status(500).json({ 
+          message: "AI waste classification unavailable. Please configure GEMINI_API_KEY in deployment settings." 
+        });
+      }
+      
       // Use Gemini Vision to classify waste  
       const result = await genAI.models.generateContent({
         model: "gemini-2.5-flash",
@@ -373,7 +396,8 @@ Be specific about the category - identify the actual item type, not just "waste"
       const googleWeatherApiKey = process.env.WEATHER_API;
       
       if (!googleWeatherApiKey) {
-        return res.status(500).json({ message: "Google Weather API key not configured" });
+        console.warn("⚠️  WEATHER_API key not configured - cannot fetch weather data");
+        return res.status(500).json({ message: "Weather API unavailable. Please configure WEATHER_API in deployment settings." });
       }
       
       // Google Weather API endpoint (using geocoding to get location info)

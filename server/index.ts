@@ -39,6 +39,28 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Environment variable validation
+function validateEnvironment() {
+  const requiredVars = [
+    'GEMINI_API_KEY',
+    'WEATHER_API',
+    'GOOGLE_MAPS_API_KEY',
+  ];
+  
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    log(`⚠️  WARNING: Missing environment variables: ${missingVars.join(', ')}`);
+    log('⚠️  Some AI features will fall back to predefined values.');
+    log('⚠️  Please configure these secrets in your deployment settings.');
+  } else {
+    log('✅ All required environment variables are configured');
+  }
+}
+
+// Run validation on startup
+validateEnvironment();
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
