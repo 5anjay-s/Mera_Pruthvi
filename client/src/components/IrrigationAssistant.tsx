@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Droplets, MapPin, Sprout, Loader2, CloudRain, Sun, Cloud, Wind, Thermometer } from "lucide-react";
@@ -38,31 +38,84 @@ export default function IrrigationAssistant() {
   const [weatherData, setWeatherData] = useState<any>(null);
   const [isLoadingWeather, setIsLoadingWeather] = useState(false);
   const { toast } = useToast();
+  
+  // Use refs to track abort controller and debounce timer
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentLocationRef = useRef<string>("");
 
   const { data: schedules = [] } = useQuery<any[]>({
     queryKey: ["/api/irrigation"],
   });
 
-  const fetchWeather = async (locationName: string) => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const fetchWeather = async (locationName: string): Promise<any | null> => {
+    // Abort any previous in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    currentLocationRef.current = locationName;
     setIsLoadingWeather(true);
+    
     try {
       const locationKey = locationName.toLowerCase().trim();
       const coords = defaultLocations[locationKey] || defaultLocations.default;
       
-      const response = await fetch(`/api/weather?latitude=${coords.lat}&longitude=${coords.lon}`);
+      const response = await fetch(
+        `/api/weather?latitude=${coords.lat}&longitude=${coords.lon}`,
+        { signal: abortController.signal }
+      );
+      
       if (!response.ok) throw new Error("Failed to fetch weather");
       
       const data = await response.json();
-      setWeatherData(data);
-    } catch (error) {
-      console.error("Weather fetch error:", error);
-      toast({
-        title: "Weather Unavailable",
-        description: "Using default location weather",
-        variant: "destructive",
-      });
-    } finally {
+      
+      // Only update if this request wasn't aborted, location ref matches, AND current location state matches
+      // This prevents stale data if user changed location during the fetch
+      if (!abortController.signal.aborted && 
+          currentLocationRef.current === locationName &&
+          location === locationName) {
+        setWeatherData(data);
+        setIsLoadingWeather(false);
+        return data;
+      }
+      
+      // If checks failed, still clear loading state
       setIsLoadingWeather(false);
+      return null;
+    } catch (error: any) {
+      // Ignore abort errors (they're expected when cancelling)
+      if (error.name === 'AbortError') {
+        setIsLoadingWeather(false);
+        return null;
+      }
+      
+      // Only show error if this request is still current
+      if (!abortController.signal.aborted && currentLocationRef.current === locationName) {
+        console.error("Weather fetch error:", error);
+        toast({
+          title: "Weather Unavailable",
+          description: "Could not fetch weather data for this location",
+          variant: "destructive",
+        });
+      }
+      setIsLoadingWeather(false);
+      return null;
     }
   };
 
@@ -93,23 +146,45 @@ export default function IrrigationAssistant() {
     e.preventDefault();
     if (!cropType || !location || !soilMoisture) return;
 
-    // Fetch weather data first if not already loaded
-    if (!weatherData && location) {
-      await fetchWeather(location);
+    // Fetch weather data first if not already loaded or if location changed
+    let currentWeatherData = weatherData;
+    if (!weatherData || currentLocationRef.current !== location) {
+      const freshWeatherData = await fetchWeather(location);
+      currentWeatherData = freshWeatherData;
     }
 
-    createSchedule.mutate({
-      cropType,
-      location,
-      soilMoisture,
-      weatherData,
-    });
+    // Only submit if we have weather data
+    if (currentWeatherData) {
+      createSchedule.mutate({
+        cropType,
+        location,
+        soilMoisture,
+        weatherData: currentWeatherData,
+      });
+    }
   };
 
   const handleLocationChange = (value: string) => {
     setLocation(value);
+    
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Clear weather data when user starts typing
+    setWeatherData(null);
+    
+    // Only fetch weather if location is long enough
     if (value.length > 2) {
-      fetchWeather(value);
+      setIsLoadingWeather(true);
+      
+      // Debounce: wait 500ms after user stops typing
+      debounceTimerRef.current = setTimeout(() => {
+        fetchWeather(value);
+      }, 500);
+    } else {
+      setIsLoadingWeather(false);
     }
   };
 
