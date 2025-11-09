@@ -384,7 +384,7 @@ Be specific about the category - identify the actual item type, not just "waste"
     }
   });
 
-  // Weather API - Fetch real weather data from OpenWeather API
+  // Weather API - Fetch real weather data from Google Weather API
   app.get("/api/weather", async (req, res) => {
     try {
       const { latitude, longitude } = req.query;
@@ -393,73 +393,93 @@ Be specific about the category - identify the actual item type, not just "waste"
         return res.status(400).json({ message: "Missing required parameters: latitude, longitude" });
       }
 
-      const openWeatherApiKey = process.env.OPENWEATHER_API_KEY;
+      // Weather API is part of Google Maps Platform, uses the same API key
+      // You need to enable "Weather API" in Google Cloud Console for your project
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
       
-      if (!openWeatherApiKey) {
-        console.warn("⚠️  OPENWEATHER_API_KEY not configured - cannot fetch weather data");
-        return res.status(500).json({ message: "Weather API unavailable. Please configure OPENWEATHER_API_KEY in deployment settings." });
+      if (!googleMapsApiKey) {
+        console.warn("⚠️  GOOGLE_MAPS_API_KEY not configured - cannot fetch weather data");
+        return res.status(500).json({ message: "Weather API unavailable. Please configure GOOGLE_MAPS_API_KEY in deployment settings." });
       }
       
-      // OpenWeather API endpoint with metric units (Celsius)
-      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${openWeatherApiKey}&units=metric`;
+      // Google Weather API endpoint - uses GET with query parameters
+      // Note: Requires Weather API to be enabled in Google Cloud Console
+      const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${googleMapsApiKey}&location.latitude=${latitude}&location.longitude=${longitude}`;
       
-      const response = await fetch(weatherUrl);
+      const response = await fetch(weatherUrl, {
+        method: 'GET'
+      });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("OpenWeather API error:", errorText);
-        throw new Error("Failed to fetch weather data from OpenWeather API");
+        console.error("Google Weather API error:", errorText);
+        throw new Error("Failed to fetch weather data from Google Weather API");
       }
 
       const data = await response.json();
-      console.log("OpenWeather API response:", JSON.stringify(data, null, 2));
+      console.log("Google Weather API response:", JSON.stringify(data, null, 2));
 
-      // Extract weather data from OpenWeather API response
-      const temperature = data.main?.temp || 25; // Celsius
-      const humidity = data.main?.humidity || 60; // Percentage
-      const windSpeed = data.wind?.speed || 0; // m/s - convert to km/h
-      const windSpeedKmh = Math.round(windSpeed * 3.6);
+      // Extract weather data from Google Weather API response with unit conversion
+      // Temperature - convert to Celsius if needed
+      const tempValue = data.temperature?.degrees || 25;
+      const tempUnit = data.temperature?.unit || "CELSIUS";
+      const temperature = tempUnit === "FAHRENHEIT" 
+        ? ((tempValue - 32) * 5 / 9) // Convert F to C
+        : tempValue;
       
-      // Precipitation in last hour (mm)
-      const precipitation = data.rain?.['1h'] || 0;
+      const humidity = data.relativeHumidity || 60; // Percentage (already a number)
       
-      // Map OpenWeather condition to our conditions
-      const weatherMain = data.weather?.[0]?.main || "Clear";
-      const weatherDescription = data.weather?.[0]?.description || "clear sky";
+      // Wind speed - convert to km/h if needed
+      const windSpeedValue = data.wind?.speed?.value || 0;
+      const windSpeedUnit = data.wind?.speed?.unit || "KILOMETERS_PER_HOUR";
+      const windSpeedKmh = windSpeedUnit === "MILES_PER_HOUR"
+        ? Math.round(windSpeedValue * 1.60934) // Convert mph to km/h
+        : Math.round(windSpeedValue);
+      
+      // Precipitation - convert to mm if needed
+      const precipValue = data.precipitation?.qpf?.quantity || 0;
+      const precipUnit = data.precipitation?.qpf?.unit || "MILLIMETERS";
+      const precipitation = precipUnit === "INCHES"
+        ? precipValue * 25.4 // Convert inches to mm
+        : precipValue;
+      
+      // Map Google Weather condition to our conditions
+      const weatherType = data.weatherCondition?.type || "CLEAR";
+      const weatherDescription = data.weatherCondition?.description?.text || "Clear";
       let condition = "Clear";
       let icon = "Sun";
       
-      if (weatherMain === "Clear") {
+      if (weatherType === "CLEAR" || weatherType === "SUNNY") {
         condition = "Clear";
         icon = "Sun";
-      } else if (weatherMain === "Clouds") {
+      } else if (weatherType === "CLOUDY" || weatherType === "MOSTLY_CLOUDY" || weatherType === "PARTLY_CLOUDY") {
         condition = "Partly Cloudy";
         icon = "Cloud";
-      } else if (weatherMain === "Rain" || weatherMain === "Drizzle") {
+      } else if (weatherType === "RAIN" || weatherType === "DRIZZLE" || weatherType === "LIGHT_RAIN") {
         condition = "Rain";
         icon = "CloudRain";
-      } else if (weatherMain === "Snow") {
+      } else if (weatherType === "SNOW" || weatherType === "LIGHT_SNOW") {
         condition = "Snow";
         icon = "CloudRain";
-      } else if (weatherMain === "Mist" || weatherMain === "Fog" || weatherMain === "Haze") {
+      } else if (weatherType === "FOG" || weatherType === "MIST" || weatherType === "HAZE") {
         condition = "Fog";
         icon = "Cloud";
-      } else if (weatherMain === "Thunderstorm") {
+      } else if (weatherType === "THUNDERSTORM" || weatherType.includes("THUNDER")) {
         condition = "Thunderstorm";
         icon = "CloudRain";
       }
 
       res.json({
         temperature: Math.round(temperature * 10) / 10, // Round to 1 decimal
-        humidity,
-        precipitation,
+        humidity: Math.round(humidity),
+        precipitation: Math.round(precipitation * 10) / 10,
         windSpeed: windSpeedKmh,
         condition,
         icon,
         description: weatherDescription
       });
     } catch (error: any) {
-      console.error("OpenWeather API error:", error);
+      console.error("Google Weather API error:", error);
       res.status(500).json({ message: error.message });
     }
   });

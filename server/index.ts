@@ -43,7 +43,6 @@ app.use(express.urlencoded({ extended: false }));
 function validateEnvironment() {
   const requiredVars = [
     'GEMINI_API_KEY',
-    'OPENWEATHER_API_KEY',
     'GOOGLE_MAPS_API_KEY',
   ];
   
@@ -55,6 +54,11 @@ function validateEnvironment() {
     log('⚠️  Please configure these secrets in your deployment settings.');
   } else {
     log('✅ All required environment variables are configured');
+  }
+  
+  // Additional note about Weather API
+  if (process.env.GOOGLE_MAPS_API_KEY && !missingVars.includes('GOOGLE_MAPS_API_KEY')) {
+    log('ℹ️  Weather features require Weather API to be enabled in Google Cloud Console for your GOOGLE_MAPS_API_KEY');
   }
 }
 

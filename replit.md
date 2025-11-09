@@ -55,7 +55,7 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   **OpenAI**: Used for advanced NLP and vision capabilities.
 -   **Neon Serverless PostgreSQL**: Production database hosting.
 -   **Google Maps Platform**: For interactive maps, Places autocomplete, and real route calculations.
--   **OpenWeather API**: Provides real-time weather data for irrigation recommendations.
+-   **Google Weather API**: Provides real-time weather data for irrigation recommendations.
 
 ### Key NPM Packages
 
@@ -70,8 +70,7 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   `GEMINI_API_KEY` (Google Gemini AI API key) - **CRITICAL for production**
 -   `OPENAI_API_KEY` (OpenAI API key)
 -   `NODE_ENV` (Environment mode)
--   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key) - **CRITICAL for production**
--   `OPENWEATHER_API_KEY` (OpenWeather API key) - **CRITICAL for production**
+-   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key with Weather API enabled) - **CRITICAL for production**
 
 ## Production Deployment
 
@@ -86,15 +85,12 @@ When deploying to production (published link), the following environment variabl
    - Irrigation scheduling recommendations
    - Environmental issue analysis
 
-2. **OPENWEATHER_API_KEY** - Powers weather features:
-   - Real-time weather data for irrigation scheduling
-   - Weather-based recommendations
-   - API endpoint: `https://api.openweathermap.org/data/2.5/weather`
-
-3. **GOOGLE_MAPS_API_KEY** - Powers navigation features:
+2. **GOOGLE_MAPS_API_KEY** - Powers navigation and weather features:
    - Interactive maps and route calculation
    - Places autocomplete
    - Eco-friendly navigation with carbon comparison
+   - Real-time weather data for irrigation scheduling (requires Weather API to be enabled)
+   - API endpoint: `https://weather.googleapis.com/v1/currentConditions:lookup`
 
 #### Optional API Keys
 - `OPENAI_API_KEY` - For advanced NLP features (currently optional)
@@ -105,11 +101,11 @@ When deploying to production (published link), the following environment variabl
 
 **Problem**: Resource Analyzer, Waste Classifier, or Weather API returning fallback/predefined data instead of real AI-generated content.
 
-**Cause**: Missing API keys in production environment (GEMINI_API_KEY or OPENWEATHER_API_KEY).
+**Cause**: Missing API keys in production environment (GEMINI_API_KEY or GOOGLE_MAPS_API_KEY) or Weather API not enabled.
 
 **Solution**:
 1. Check deployment logs for warning messages:
-   - `⚠️ WARNING: Missing environment variables: GEMINI_API_KEY, OPENWEATHER_API_KEY`
+   - `⚠️ WARNING: Missing environment variables: GEMINI_API_KEY, GOOGLE_MAPS_API_KEY`
    - `⚠️ Some AI features will fall back to predefined values.`
 
 2. Configure missing environment variables in deployment settings:
@@ -136,13 +132,20 @@ When deploying to production (published link), the following environment variabl
 
 **Solution**: Add GEMINI_API_KEY to deployment secrets and redeploy.
 
-#### Symptom: Weather Data Shows Default Values
+#### Symptom: Weather Data Shows Default Values or 404 Error
 
-**Problem**: Weather API returns hardcoded values (e.g., 25°C, 60% humidity).
+**Problem**: Weather API returns hardcoded values (e.g., 25°C, 60% humidity) or 404 error.
 
-**Cause**: OPENWEATHER_API_KEY not configured in production.
+**Cause**: Either GOOGLE_MAPS_API_KEY not configured, or Weather API not enabled in Google Cloud Console.
 
-**Solution**: Add OPENWEATHER_API_KEY to deployment secrets and redeploy.
+**Solution**:
+1. Ensure GOOGLE_MAPS_API_KEY is configured in deployment secrets
+2. Enable Weather API in Google Cloud Console:
+   - Go to Google Cloud Console (https://console.cloud.google.com/)
+   - Navigate to **APIs & Services** > **Library**
+   - Search for **"Weather API"**
+   - Click **Weather API** and click **Enable**
+3. Redeploy the application
 
 ### Environment Variable Validation
 
