@@ -246,47 +246,6 @@ export default function IrrigationAssistant() {
               </div>
             </div>
 
-            {weatherData && (
-              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-background to-background border border-primary/20 backdrop-blur-sm">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Cloud className="h-4 w-4 text-primary" />
-                  Current Weather Conditions
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
-                    <div className="text-primary mb-1">
-                      {getWeatherIcon(weatherData.icon)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Condition</p>
-                    <p className="text-sm font-semibold">{weatherData.condition}</p>
-                  </div>
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
-                    <Thermometer className="h-8 w-8 text-orange-500 mb-1" />
-                    <p className="text-xs text-muted-foreground">Temperature</p>
-                    <p className="text-sm font-semibold">{weatherData.temperature}°C</p>
-                  </div>
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
-                    <Droplets className="h-8 w-8 text-blue-500 mb-1" />
-                    <p className="text-xs text-muted-foreground">Humidity</p>
-                    <p className="text-sm font-semibold">{weatherData.humidity}%</p>
-                  </div>
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-background/50 backdrop-blur">
-                    <Wind className="h-8 w-8 text-sky-500 mb-1" />
-                    <p className="text-xs text-muted-foreground">Wind Speed</p>
-                    <p className="text-sm font-semibold">{weatherData.windSpeed} km/h</p>
-                  </div>
-                </div>
-                {weatherData.precipitation > 0 && (
-                  <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                      <CloudRain className="h-4 w-4" />
-                      Rain detected: {weatherData.precipitation}mm - Consider skipping irrigation today
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label>Current Soil Moisture Level</Label>
               <div className="grid grid-cols-3 gap-3">
