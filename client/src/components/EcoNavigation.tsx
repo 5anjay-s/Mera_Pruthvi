@@ -31,7 +31,7 @@ const transportModes: TransportMode[] = [
   { id: "cycle", name: "Cycling", icon: Bike, carbonFactor: 0, credits: 20, color: "text-green-600", routeColor: "#10b981", googleMode: "BICYCLING" },
   { id: "transit", name: "Transit", icon: Bus, carbonFactor: 0.05, credits: 15, color: "text-blue-600", routeColor: "#3b82f6", googleMode: "TRANSIT" },
   { id: "carpool", name: "Carpool", icon: Users, carbonFactor: 0.06, credits: 10, color: "text-yellow-600", routeColor: "#f59e0b", googleMode: "DRIVING" },
-  { id: "car", name: "Solo Car", icon: Car, carbonFactor: 0.2, credits: 2, color: "text-red-600", routeColor: "#ef4444", googleMode: "DRIVING" },
+  { id: "car", name: "Solo Car", icon: Car, carbonFactor: 0.2, credits: 0, color: "text-red-600", routeColor: "#ef4444", googleMode: "DRIVING" },
 ];
 
 export default function EcoNavigation() {
