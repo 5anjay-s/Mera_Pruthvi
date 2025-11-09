@@ -55,7 +55,7 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   **OpenAI**: Used for advanced NLP and vision capabilities.
 -   **Neon Serverless PostgreSQL**: Production database hosting.
 -   **Google Maps Platform**: For interactive maps, Places autocomplete, and real route calculations.
--   **Google Weather API**: Provides real-time weather data for irrigation recommendations.
+-   **OpenWeather API**: Provides real-time weather data for irrigation recommendations.
 
 ### Key NPM Packages
 
@@ -71,7 +71,7 @@ The application uses a demo user approach (`demo-user-123`) for direct access wi
 -   `OPENAI_API_KEY` (OpenAI API key)
 -   `NODE_ENV` (Environment mode)
 -   `GOOGLE_MAPS_API_KEY` (Google Maps Platform API key) - **CRITICAL for production**
--   `WEATHER_API` (Google Weather API key) - **CRITICAL for production**
+-   `OPENWEATHER_API_KEY` (OpenWeather API key) - **CRITICAL for production**
 
 ## Production Deployment
 
@@ -86,10 +86,10 @@ When deploying to production (published link), the following environment variabl
    - Irrigation scheduling recommendations
    - Environmental issue analysis
 
-2. **WEATHER_API** - Powers weather features:
+2. **OPENWEATHER_API_KEY** - Powers weather features:
    - Real-time weather data for irrigation scheduling
    - Weather-based recommendations
-   - API endpoint: `https://weather.googleapis.com/v1/currentConditions:lookup`
+   - API endpoint: `https://api.openweathermap.org/data/2.5/weather`
 
 3. **GOOGLE_MAPS_API_KEY** - Powers navigation features:
    - Interactive maps and route calculation
@@ -105,11 +105,11 @@ When deploying to production (published link), the following environment variabl
 
 **Problem**: Resource Analyzer, Waste Classifier, or Weather API returning fallback/predefined data instead of real AI-generated content.
 
-**Cause**: Missing API keys in production environment (GEMINI_API_KEY or WEATHER_API).
+**Cause**: Missing API keys in production environment (GEMINI_API_KEY or OPENWEATHER_API_KEY).
 
 **Solution**:
 1. Check deployment logs for warning messages:
-   - `⚠️ WARNING: Missing environment variables: GEMINI_API_KEY, WEATHER_API`
+   - `⚠️ WARNING: Missing environment variables: GEMINI_API_KEY, OPENWEATHER_API_KEY`
    - `⚠️ Some AI features will fall back to predefined values.`
 
 2. Configure missing environment variables in deployment settings:
@@ -140,9 +140,9 @@ When deploying to production (published link), the following environment variabl
 
 **Problem**: Weather API returns hardcoded values (e.g., 25°C, 60% humidity).
 
-**Cause**: WEATHER_API key not configured in production.
+**Cause**: OPENWEATHER_API_KEY not configured in production.
 
-**Solution**: Add WEATHER_API to deployment secrets and redeploy.
+**Solution**: Add OPENWEATHER_API_KEY to deployment secrets and redeploy.
 
 ### Environment Variable Validation
 

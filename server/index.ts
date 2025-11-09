@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: false }));
 function validateEnvironment() {
   const requiredVars = [
     'GEMINI_API_KEY',
-    'WEATHER_API',
+    'OPENWEATHER_API_KEY',
     'GOOGLE_MAPS_API_KEY',
   ];
   

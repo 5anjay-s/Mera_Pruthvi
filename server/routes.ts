@@ -384,7 +384,7 @@ Be specific about the category - identify the actual item type, not just "waste"
     }
   });
 
-  // Weather API - Fetch real weather data from Google Weather API
+  // Weather API - Fetch real weather data from OpenWeather API
   app.get("/api/weather", async (req, res) => {
     try {
       const { latitude, longitude } = req.query;
@@ -393,74 +393,73 @@ Be specific about the category - identify the actual item type, not just "waste"
         return res.status(400).json({ message: "Missing required parameters: latitude, longitude" });
       }
 
-      const googleWeatherApiKey = process.env.WEATHER_API;
+      const openWeatherApiKey = process.env.OPENWEATHER_API_KEY;
       
-      if (!googleWeatherApiKey) {
-        console.warn("⚠️  WEATHER_API key not configured - cannot fetch weather data");
-        return res.status(500).json({ message: "Weather API unavailable. Please configure WEATHER_API in deployment settings." });
+      if (!openWeatherApiKey) {
+        console.warn("⚠️  OPENWEATHER_API_KEY not configured - cannot fetch weather data");
+        return res.status(500).json({ message: "Weather API unavailable. Please configure OPENWEATHER_API_KEY in deployment settings." });
       }
       
-      // Google Weather API endpoint (using geocoding to get location info)
-      const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${googleWeatherApiKey}&location.latitude=${latitude}&location.longitude=${longitude}`;
+      // OpenWeather API endpoint with metric units (Celsius)
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${openWeatherApiKey}&units=metric`;
       
       const response = await fetch(weatherUrl);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Google Weather API error:", errorText);
-        throw new Error("Failed to fetch weather data from Google Weather API");
+        console.error("OpenWeather API error:", errorText);
+        throw new Error("Failed to fetch weather data from OpenWeather API");
       }
 
       const data = await response.json();
-      console.log("Google Weather API response:", JSON.stringify(data, null, 2));
+      console.log("OpenWeather API response:", JSON.stringify(data, null, 2));
 
-      // Extract weather data from Google Weather API response (correct structure)
-      const temperature = data.temperature?.degrees || 25; // Celsius
-      const humidity = data.relativeHumidity || 60; // Percentage
-      const windSpeed = data.wind?.speed?.value || 0; // km/h
+      // Extract weather data from OpenWeather API response
+      const temperature = data.main?.temp || 25; // Celsius
+      const humidity = data.main?.humidity || 60; // Percentage
+      const windSpeed = data.wind?.speed || 0; // m/s - convert to km/h
+      const windSpeedKmh = Math.round(windSpeed * 3.6);
       
-      // Google Weather API doesn't provide precipitation last hour in current conditions
-      // Use precipitation probability as a proxy
-      const precipitationProbability = data.precipitation?.probability?.percent || 0;
-      const precipitation = precipitationProbability > 50 ? 5 : 0; // Estimate mm based on probability
+      // Precipitation in last hour (mm)
+      const precipitation = data.rain?.['1h'] || 0;
       
-      // Map Google Weather condition types to our conditions
-      const weatherType = data.weatherCondition?.type || "CLEAR";
-      const weatherDescription = data.weatherCondition?.description?.text || "";
+      // Map OpenWeather condition to our conditions
+      const weatherMain = data.weather?.[0]?.main || "Clear";
+      const weatherDescription = data.weather?.[0]?.description || "clear sky";
       let condition = "Clear";
       let icon = "Sun";
       
-      if (weatherType === "CLEAR" || weatherType === "SUNNY") {
+      if (weatherMain === "Clear") {
         condition = "Clear";
         icon = "Sun";
-      } else if (weatherType === "CLOUDY" || weatherType === "PARTLY_CLOUDY" || weatherType === "OVERCAST") {
+      } else if (weatherMain === "Clouds") {
         condition = "Partly Cloudy";
         icon = "Cloud";
-      } else if (weatherType === "RAINY" || weatherType === "RAIN" || weatherType === "DRIZZLE") {
+      } else if (weatherMain === "Rain" || weatherMain === "Drizzle") {
         condition = "Rain";
         icon = "CloudRain";
-      } else if (weatherType === "SNOWY" || weatherType === "SNOW") {
+      } else if (weatherMain === "Snow") {
         condition = "Snow";
         icon = "CloudRain";
-      } else if (weatherType === "FOGGY" || weatherType === "FOG" || weatherType === "MIST") {
+      } else if (weatherMain === "Mist" || weatherMain === "Fog" || weatherMain === "Haze") {
         condition = "Fog";
         icon = "Cloud";
-      } else if (weatherType === "THUNDERSTORM" || weatherType === "STORMY") {
+      } else if (weatherMain === "Thunderstorm") {
         condition = "Thunderstorm";
         icon = "CloudRain";
       }
 
       res.json({
-        temperature,
+        temperature: Math.round(temperature * 10) / 10, // Round to 1 decimal
         humidity,
         precipitation,
-        windSpeed,
+        windSpeed: windSpeedKmh,
         condition,
         icon,
-        description: weatherDescription || condition
+        description: weatherDescription
       });
     } catch (error: any) {
-      console.error("Google Weather API error:", error);
+      console.error("OpenWeather API error:", error);
       res.status(500).json({ message: error.message });
     }
   });
